@@ -5,7 +5,15 @@ import {
   ParameterInformation,
   MarkdownString,
 } from 'vscode';
-import { getIncludeText, getIncludePath, includePattern, findFilepath, libraryIncludePattern, AUTOIT_MODE } from './util';
+import fs from 'fs';
+import {
+  getIncludeText,
+  getIncludePath,
+  includePattern,
+  findFilepath,
+  libraryIncludePattern,
+  AUTOIT_MODE,
+} from './util';
 import defaultSigs from './signatures';
 import DEFAULT_UDFS from './constants';
 
@@ -31,9 +39,18 @@ function getParsableCode(code) {
 
 function getCurrentFunction(code) {
   const parenSplit = code.split('(');
-  // Get the 2nd to last item (right in front of last open paren)
-  // and clean up the results
-  return parenSplit[parenSplit.length - 2].match(/(.*)\b(\w+)/)[2];
+
+  if (parenSplit.length > 1) {
+    // Get the 2nd to last item (right in front of last open paren)
+    // and clean up the results
+    const parenMatch = parenSplit[parenSplit.length - 2].match(/(.*)\b(\w+)/);
+
+    if (parenMatch) {
+      return parenMatch[2];
+    }
+  }
+
+  return null;
 }
 
 function countCommas(code) {
@@ -153,7 +170,7 @@ function getIncludes(doc) {
 }
 
 function getLocalSigs(doc) {
-  const functionPattern = /^[\t ]{0,}Func\s+((\w+)\((.+)?\))/gmi;
+  const functionPattern = /^[\t ]{0,}Func\s+((\w+)\((.+)?\))/gim;
   const text = doc.getText();
   let functions = {};
 
@@ -181,7 +198,7 @@ export default languages.registerSignatureHelpProvider(
     provideSignatureHelp(document, position) {
       // Find out what called for sig
       const caller = getCallInfo(document, position);
-      if (caller == null) {
+      if (caller.func == null) {
         return null;
       }
 
