@@ -107,8 +107,11 @@ function getIncludeData(fileName, doc) {
   // console.log(fileName)
   const functionPattern = /(?=\S)(?!;~\s)Func\s+((\w+)\((.+)?\))/gi;
   const functions = {};
-  const filePath = getIncludePath(fileName, doc);
-
+  let filePath = getIncludePath(fileName, doc);
+  if (!fs.existsSync(filePath)) {
+    // Find first instance using include paths
+    filePath = findFilepath(fileName, false);
+  }
   let pattern = null;
   const fileData = getIncludeText(filePath);
   do {
