@@ -5,7 +5,14 @@ import {
   ParameterInformation,
   MarkdownString,
 } from 'vscode';
-import { getIncludeText, getIncludePath, includePattern, findFilepath, libraryIncludePattern, AUTOIT_MODE } from './util';
+import {
+  includePattern,
+  findFilepath,
+  libraryIncludePattern,
+  getIncludeData,
+  getParams,
+  AUTOIT_MODE,
+} from './util';
 import defaultSigs from './signatures';
 import DEFAULT_UDFS from './constants';
 
@@ -68,46 +75,6 @@ function arraysMatch(arr1, arr2) {
   return false;
 }
 
-function getParams(paramText) {
-  let params = {};
-
-  if (paramText) {
-    paramText.split(',').forEach(param => {
-      params = {
-        ...params,
-        [param]: {
-          label: param.trim(),
-          documentation: '',
-        },
-      };
-    });
-  }
-
-  return params;
-}
-
-function getIncludeData(fileName, doc) {
-  // console.log(fileName)
-  const functionPattern = /(?=\S)(?!;~\s)Func\s+((\w+)\((.+)?\))/gi;
-  const functions = {};
-  const filePath = getIncludePath(fileName, doc);
-
-  let pattern = null;
-  const fileData = getIncludeText(filePath);
-  do {
-    pattern = functionPattern.exec(fileData);
-    if (pattern) {
-      functions[pattern[2]] = {
-        label: pattern[1],
-        documentation: `Function from ${fileName}`,
-        params: getParams(pattern[3]),
-      };
-    }
-  } while (pattern);
-
-  return functions;
-}
-
 function getIncludes(doc) {
   // determines whether includes should be re-parsed or not.
   const text = doc.getText();
@@ -125,7 +92,7 @@ function getIncludes(doc) {
     includes = {};
     includesCheck.forEach(script => {
       const newIncludes = getIncludeData(script, doc);
-      includes = { ...includes, ...newIncludes };
+      includes = { ...includes, ...Object.keys(newIncludes) };
     });
     currentIncludeFiles = includesCheck;
   }
@@ -143,7 +110,7 @@ function getIncludes(doc) {
         fullPath = findFilepath(pattern[1]);
         if (fullPath) {
           newData = getIncludeData(fullPath, doc);
-          includes = { ...includes, newData };
+          includes = { ...includes, ...Object.keys(newData) };
         }
       }
     }
@@ -153,7 +120,7 @@ function getIncludes(doc) {
 }
 
 function getLocalSigs(doc) {
-  const functionPattern = /^[\t ]{0,}Func\s+((\w+)\((.+)?\))/gmi;
+  const functionPattern = /^[\t ]{0,}Func\s+((\w+)\((.+)?\))/gim;
   const text = doc.getText();
   let functions = {};
 
