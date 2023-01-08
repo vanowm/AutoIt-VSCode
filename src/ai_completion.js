@@ -1,4 +1,5 @@
 import { languages, CompletionItem, CompletionItemKind, Range } from 'vscode';
+import fs from 'fs';
 import completions from './completions';
 import {
   getIncludeText,
@@ -10,7 +11,6 @@ import {
   AUTOIT_MODE,
 } from './util';
 import DEFAULT_UDFS from './constants';
-import fs from 'fs';
 
 let currentIncludeFiles = [];
 let includes = [];
@@ -46,8 +46,8 @@ function getIncludeData(fileName, document) {
   // Check if file exists in document directory
   let filePath = getIncludePath(fileName, document);
   if (!fs.existsSync(filePath)) {
-	// Find first instance using include paths
-	filePath = findFilepath(fileName, false);  
+    // Find first instance using include paths
+    filePath = findFilepath(fileName, false);
   }
   let pattern = null;
   const fileData = getIncludeText(filePath);
