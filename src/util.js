@@ -186,6 +186,55 @@ const findFilepath = (file, library = true) => {
   return false;
 };
 
+const getParams = paramText => {
+  let params = {};
+
+  if (paramText) {
+    paramText.split(',').forEach(param => {
+      params = {
+        ...params,
+        [param]: {
+          label: param.trim(),
+          documentation: '',
+        },
+      };
+    });
+  }
+
+  return params;
+};
+
+/**
+ * Returns an object of AutoIt functions found within a VSCode TextDocument
+ * @param {string} fileName
+ * @param {vscode.TextDocument} doc
+ * @returns {Object} Object of functions in file
+ */
+const getIncludeData = (fileName, doc) => {
+  // console.log(fileName)
+  const includeFuncPattern = /(?=\S)(?!;~\s)Func\s+((\w+)\((.+)?\))/gi;
+  const functions = {};
+  let filePath = getIncludePath(fileName, doc);
+  if (!fs.existsSync(filePath)) {
+    // Find first instance using include paths
+    filePath = findFilepath(fileName, false);
+  }
+  let pattern = null;
+  const fileData = getIncludeText(filePath);
+  do {
+    pattern = includeFuncPattern.exec(fileData);
+    if (pattern) {
+      functions[pattern[2]] = {
+        label: pattern[1],
+        documentation: `Function from ${fileName}`,
+        params: getParams(pattern[3]),
+      };
+    }
+  } while (pattern);
+
+  return functions;
+};
+
 module.exports = {
   descriptionHeader,
   valueFirstHeader,
@@ -209,4 +258,6 @@ module.exports = {
   completionToHover,
   signatureToCompletion,
   findFilepath,
+  getIncludeData,
+  getParams,
 };

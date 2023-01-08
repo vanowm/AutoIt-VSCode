@@ -2,12 +2,11 @@ import { languages, CompletionItem, CompletionItemKind, Range } from 'vscode';
 import fs from 'fs';
 import completions from './completions';
 import {
-  getIncludeText,
-  getIncludePath,
   includePattern,
   variablePattern,
   libraryIncludePattern,
   findFilepath,
+  getIncludeData,
   AUTOIT_MODE,
 } from './util';
 import DEFAULT_UDFS from './constants';
@@ -33,33 +32,6 @@ const arraysMatch = (arr1, arr2) => {
   }
   return false;
 };
-
-/**
- * Returns an array of AutoIt functions found within a VSCode TextDocument
- * @param {string} fileName
- * @param {vscode.TextDocument} document
- * @returns {Array} Array of functions in file
- */
-function getIncludeData(fileName, document) {
-  const includeFuncPattern = /^(?=\S)(?!;~\s)Func\s+(\w+)\s*\(/gm;
-  const functions = [];
-  // Check if file exists in document directory
-  let filePath = getIncludePath(fileName, document);
-  if (!fs.existsSync(filePath)) {
-    // Find first instance using include paths
-    filePath = findFilepath(fileName, false);
-  }
-  let pattern = null;
-  const fileData = getIncludeText(filePath);
-
-  pattern = includeFuncPattern.exec(fileData);
-  do {
-    if (pattern) functions.push(pattern[1]);
-    pattern = includeFuncPattern.exec(fileData);
-  } while (pattern !== null);
-
-  return functions;
-}
 
 /**
  * Generates function completions from files included through library paths
@@ -190,7 +162,7 @@ const provideCompletionItems = (document, position) => {
     includesCheck.forEach(include => {
       includeFunctions = getIncludeData(include, document);
       if (includeFunctions) {
-        includeFunctions.forEach(newFunc => {
+        Object.keys(includeFunctions).forEach(newFunc => {
           includes.push(
             createNewCompletionItem(
               CompletionItemKind.Function,
