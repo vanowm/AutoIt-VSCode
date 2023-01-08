@@ -1,4 +1,5 @@
 import { languages, CompletionItem, CompletionItemKind, Range } from 'vscode';
+import fs from 'fs';
 import completions from './completions';
 import {
   includePattern,
