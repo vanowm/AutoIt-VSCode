@@ -186,6 +186,49 @@ const findFilepath = (file, library = true) => {
   return false;
 };
 
+/**
+ * Generates an array of Include scripts to search
+ * that includes the full range of the region's body
+ * @param {TextDocument} document The current document to search
+ * @param {String} docText The text from the document
+ * @param {Array} scriptsToSearch The destination array
+ * @returns SymbolInformation
+ */
+const getIncludeScripts = (document, docText, scriptsToSearch) => {
+  const relativeInclude = /^\s*#include\s"(.+)"/gm;
+  const libraryInclude = /^\s*#include\s<(.+)>/gm;
+  let includeFile;
+  let scriptContent;
+
+  let found = relativeInclude.exec(docText);
+  while (found) {
+    // Check if file exists in document directory
+    includeFile = getIncludePath(found[1], document);
+    if (!fs.existsSync(includeFile)) {
+      // Find first instance using include paths
+      includeFile = findFilepath(found[1], false);
+    }
+    if (includeFile && scriptsToSearch.indexOf(includeFile) === -1) {
+      scriptsToSearch.push(includeFile);
+      scriptContent = getIncludeText(includeFile);
+      getIncludeScripts(document, scriptContent, scriptsToSearch);
+    }
+    found = relativeInclude.exec(docText);
+  }
+
+  found = libraryInclude.exec(docText);
+  while (found) {
+    // Find first instance using include paths
+    includeFile = findFilepath(found[1], false);
+    if (includeFile && scriptsToSearch.indexOf(includeFile) === -1) {
+      scriptsToSearch.push(includeFile);
+      scriptContent = getIncludeText(includeFile);
+      getIncludeScripts(document, scriptContent, scriptsToSearch);
+    }
+    found = libraryInclude.exec(docText);
+  }
+};
+
 const getParams = paramText => {
   let params = {};
 
@@ -260,4 +303,5 @@ module.exports = {
   findFilepath,
   getIncludeData,
   getParams,
+  getIncludeScripts,
 };
