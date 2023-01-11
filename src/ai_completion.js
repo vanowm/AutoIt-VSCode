@@ -89,8 +89,8 @@ const getVariableCompletions = (text, firstChar) => {
   if (firstChar === '$') {
     let pattern = variablePattern.exec(text);
     while (pattern) {
-      [variableName] = pattern;
-      if (!(variableName in foundVariables)) {
+      [, variableName] = pattern;
+      if (variableName !== undefined && !(variableName in foundVariables)) {
         foundVariables[variableName] = true;
         variables.push(createNewCompletionItem(CompletionItemKind.Variable, variableName));
       }
