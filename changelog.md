@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Ignore case when identifying functions and regions (thanks to [@Danp2](https://github.com/Danp2))
+- Include search made recursive (thanks to [@Danp2](https://github.com/Danp2))
 
 ### Fixed
 
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Can now capture regions with hyphens (thanks to [@Danp2](https://github.com/Danp2))
 - Syntax highlighting for nested comment blocks (thanks to [@Danp2](https://github.com/Danp2))
 - Include paths checked when gathering include data (thanks to [@Danp2](https://github.com/Danp2))
+- Problem tab not showing errors or warnings
 
 ## [1.0.10] - 2022-12-05
 
