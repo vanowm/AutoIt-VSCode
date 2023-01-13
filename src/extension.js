@@ -15,9 +15,11 @@ const { parseAu3CheckOutput } = require('./diagnosticUtils');
 const { config } = require('./ai_config').default;
 
 let diagnosticCollection;
+let consoleOutput;
 
 const checkAutoItCode = document => {
   diagnosticCollection.clear();
+  consoleOutput = '';
 
   if (!config.enableDiagnostics) {
     return;
@@ -41,11 +43,15 @@ const checkAutoItCode = document => {
     if (data.length === 0) {
       return;
     }
-    parseAu3CheckOutput(data.toString(), diagnosticCollection);
+    consoleOutput += data.toString();
   });
 
   checkProcess.stderr.on('error', error => {
     vscode.window.showErrorMessage(`${config.checkPath} error: ${error}`);
+  });
+
+  checkProcess.on('close', () => {
+    parseAu3CheckOutput(consoleOutput, diagnosticCollection);
   });
 };
 
