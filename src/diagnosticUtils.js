@@ -34,7 +34,7 @@ export const updateDiagnostics = (currentDiagnostics, scriptPath, range, descrip
  * @param {vscode.Uri} docURI - The URI of the document that was checked
  */
 export const parseAu3CheckOutput = (output, collection, docURI) => {
-  const OUTPUT_REGEXP = /"(?<scriptPath>.+)"\((?<line>\d{1,4}),(?<position>\d{1,4})\)\s:\s(?<severity>warning|error):\s(?<description>.+)\./gm;
+  const OUTPUT_REGEXP = /"(?<scriptPath>.+)"\((?<line>\d{1,4}),(?<position>\d{1,4})\)\s:\s(?<severity>warning|error):\s(?<description>.+)\r/gm;
   let matches = null;
   let diagnosticRange;
   let diagnosticSeverity;
