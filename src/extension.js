@@ -78,6 +78,9 @@ const activate = ctx => {
   vscode.workspace.onDidOpenTextDocument(document =>
     checkAutoItCode(document, diagnosticCollection),
   );
+  vscode.workspace.onDidCloseTextDocument(document => {
+    diagnosticCollection.delete(document.uri);
+  });
   vscode.window.onDidChangeActiveTextEditor(editor => {
     if (editor) {
       checkAutoItCode(editor.document, diagnosticCollection);
