@@ -14,14 +14,11 @@ const { registerCommands } = require('./registerCommands');
 const { parseAu3CheckOutput } = require('./diagnosticUtils');
 const { config } = require('./ai_config').default;
 
-let diagnosticCollection;
-let consoleOutput;
-
-const checkAutoItCode = document => {
-  diagnosticCollection.clear();
-  consoleOutput = '';
+const checkAutoItCode = (document, diagnosticCollection) => {
+  let consoleOutput = '';
 
   if (!config.enableDiagnostics) {
+    diagnosticCollection.clear();
     return;
   }
 
@@ -51,7 +48,7 @@ const checkAutoItCode = document => {
   });
 
   checkProcess.on('close', () => {
-    parseAu3CheckOutput(consoleOutput, diagnosticCollection);
+    parseAu3CheckOutput(consoleOutput, diagnosticCollection, document.uri);
   });
 };
 
@@ -72,14 +69,18 @@ const activate = ctx => {
 
   registerCommands();
 
-  diagnosticCollection = vscode.languages.createDiagnosticCollection('autoit');
+  const diagnosticCollection = vscode.languages.createDiagnosticCollection('autoit');
   ctx.subscriptions.push(diagnosticCollection);
 
-  vscode.workspace.onDidSaveTextDocument(document => checkAutoItCode(document));
-  vscode.workspace.onDidOpenTextDocument(document => checkAutoItCode(document));
+  vscode.workspace.onDidSaveTextDocument(document =>
+    checkAutoItCode(document, diagnosticCollection),
+  );
+  vscode.workspace.onDidOpenTextDocument(document =>
+    checkAutoItCode(document, diagnosticCollection),
+  );
   vscode.window.onDidChangeActiveTextEditor(editor => {
     if (editor) {
-      checkAutoItCode(editor.document);
+      checkAutoItCode(editor.document, diagnosticCollection);
     }
   });
 
