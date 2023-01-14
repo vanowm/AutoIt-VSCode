@@ -40,7 +40,7 @@ function provideWorkspaceSymbols(query) {
             const { 1: newName } = variableFound;
 
             // Filter based on search (if it's not empty)
-            if (!searchFilter.exec(newName)) {
+            if (newName === undefined || !searchFilter.exec(newName)) {
               return false;
             }
             symbolKind = SymbolKind.Variable;
