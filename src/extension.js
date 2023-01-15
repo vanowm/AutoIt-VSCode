@@ -86,11 +86,11 @@ const activate = ctx => {
       checkAutoItCode(editor.document, diagnosticCollection);
     }
   });
-  vscode.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
-    if (affectsConfiguration('autoit') && vscode.window.activeTextEditor) {
-      checkAutoItCode(vscode.window.activeTextEditor.document, diagnosticCollection);
-    }
-  });
+
+  // Run diagnostic on document that's open when the extension loads
+  if (config.enableDiagnostics && vscode.window.activeTextEditor) {
+    checkAutoItCode(vscode.window.activeTextEditor.document, diagnosticCollection);
+  }
 
   // eslint-disable-next-line no-console
   console.log('AutoIt is now active!');
