@@ -63,7 +63,7 @@ export const activate = ctx => {
 
   ctx.subscriptions.push(languages.setLanguageConfiguration('autoit', languageConfiguration));
 
-  registerCommands();
+  registerCommands(ctx);
 
   diagnosticCollection = languages.createDiagnosticCollection('autoit');
 
