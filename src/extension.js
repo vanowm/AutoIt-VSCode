@@ -1,19 +1,20 @@
-const vscode = require('vscode');
-const path = require('path');
-const fs = require('fs');
-const { spawn } = require('child_process');
-const languageConfiguration = require('./languageConfiguration');
-const hoverFeature = require('./ai_hover');
-const completionFeature = require('./ai_completion');
-const symbolsFeature = require('./ai_symbols');
-const signaturesFeature = require('./ai_signature');
-const workspaceSymbolsFeature = require('./ai_workspaceSymbols');
-const goToDefinitionFeature = require('./ai_definition');
+import { window, languages, workspace } from 'vscode';
+import { dirname } from 'path';
+import { existsSync } from 'fs';
+import { spawn } from 'child_process';
+import languageConfiguration from './languageConfiguration';
+import hoverFeature from './ai_hover';
+import completionFeature from './ai_completion';
+import symbolsFeature from './ai_symbols';
+import signaturesFeature from './ai_signature';
+import workspaceSymbolsFeature from './ai_workspaceSymbols';
+import goToDefinitionFeature from './ai_definition';
 
-const { registerCommands } = require('./registerCommands');
-const { parseAu3CheckOutput } = require('./diagnosticUtils');
-const { config } = require('./ai_config').default;
+import { registerCommands } from './registerCommands';
+import { parseAu3CheckOutput } from './diagnosticUtils';
+import conf from './ai_config';
 
+const { config } = conf;
 let diagnosticCollection;
 
 const checkAutoItCode = document => {
@@ -27,14 +28,14 @@ const checkAutoItCode = document => {
     return;
   }
 
-  if (!fs.existsSync(config.checkPath)) {
-    vscode.window.showErrorMessage(
+  if (!existsSync(config.checkPath)) {
+    window.showErrorMessage(
       'Invalid Check Path! Please review AutoIt settings (Check Path in UI, autoit.checkPath in JSON)',
     );
     return;
   }
   const checkProcess = spawn(config.checkPath, [document.fileName], {
-    cwd: path.dirname(document.fileName),
+    cwd: dirname(document.fileName),
   });
 
   checkProcess.stdout.on('data', data => {
@@ -45,11 +46,11 @@ const checkAutoItCode = document => {
   });
 
   checkProcess.stderr.on('error', error => {
-    vscode.window.showErrorMessage(`${config.checkPath} error: ${error}`);
+    window.showErrorMessage(`${config.checkPath} error: ${error}`);
   });
 };
 
-const activate = ctx => {
+export const activate = ctx => {
   const features = [
     hoverFeature,
     completionFeature,
@@ -60,18 +61,15 @@ const activate = ctx => {
   ];
   ctx.subscriptions.push(...features);
 
-  ctx.subscriptions.push(
-    vscode.languages.setLanguageConfiguration('autoit', languageConfiguration),
-  );
+  ctx.subscriptions.push(languages.setLanguageConfiguration('autoit', languageConfiguration));
 
   registerCommands();
 
-  diagnosticCollection = vscode.languages.createDiagnosticCollection('autoit');
-  ctx.subscriptions.push(diagnosticCollection);
+  diagnosticCollection = languages.createDiagnosticCollection('autoit');
 
-  vscode.workspace.onDidSaveTextDocument(document => checkAutoItCode(document));
-  vscode.workspace.onDidOpenTextDocument(document => checkAutoItCode(document));
-  vscode.window.onDidChangeActiveTextEditor(editor => {
+  workspace.onDidSaveTextDocument(document => checkAutoItCode(document));
+  workspace.onDidOpenTextDocument(document => checkAutoItCode(document));
+  window.onDidChangeActiveTextEditor(editor => {
     if (editor) {
       checkAutoItCode(editor.document);
     }
@@ -81,9 +79,6 @@ const activate = ctx => {
   console.log('AutoIt is now active!');
 };
 
-exports.activate = activate;
-
 // this method is called when your extension is deactivated
 // eslint-disable-next-line prettier/prettier
-function deactivate() { }
-exports.deactivate = deactivate;
+export function deactivate() { }
