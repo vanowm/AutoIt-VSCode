@@ -24,15 +24,19 @@ const createVariableSymbol = (variable, variableKind, doc, line, container) => {
  * that includes the full range of the function's body
  * @param {String} functionName The name of the function from the AutoIt script
  * @param {TextDocument} doc The current document to search
- * @param {String} docText The text from the document (usually generated through `TextDocument.getText()`)
+ * @param {Number} lineNum The function's starting line number within the document
  * @returns SymbolInformation
  */
-const createFunctionSymbol = (functionName, doc, docText) => {
+const createFunctionSymbol = (functionName, doc, lineNum) => {
   const pattern = new RegExp(
     // `^Func\\s+\\b(?<funcName>${functionName}\\b).*\\n(?:(?!EndFunc\\b).*\\n)*EndFunc.*\\n?`
     `Func\\s+\\b(?<funcName>${functionName}+\\b).*?(EndFunc)`,
-    'si',
+    'gsi',
   );
+  const docText = doc.getText();
+
+  // Establish starting position for regex search
+  pattern.lastIndex = doc.offsetAt(doc.lineAt(lineNum).range.start);
   const result = pattern.exec(docText);
   if (result === null) {
     return null;
@@ -115,7 +119,7 @@ export default languages.registerDocumentSymbolProvider(AUTOIT_MODE, {
 
       funcName = functionPattern.exec(text);
       if (funcName && !found.includes(funcName[0])) {
-        const functionSymbol = createFunctionSymbol(funcName[1], doc, doc.getText());
+        const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
 
         if (functionSymbol) {
           result.push(functionSymbol);
