@@ -98,13 +98,13 @@ export default languages.registerDocumentSymbolProvider(AUTOIT_MODE, {
         continue;
       }
 
-      if (/^#(?:ce|comments-end)/.test(text)) {
+      if (/^\s*#(?:ce|comments-end)/.test(text)) {
         inComment = false;
         // eslint-disable-next-line no-continue
         continue;
       }
 
-      if (/^#(?:cs|comments-start)/.test(text)) {
+      if (/^\s*#(?:cs|comments-start)/.test(text)) {
         inComment = true;
       }
 
