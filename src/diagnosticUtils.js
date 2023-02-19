@@ -31,13 +31,19 @@ export const updateDiagnostics = (currentDiagnostics, scriptPath, range, descrip
  * Processes the results of AU3Check, identifies warnings and errors.
  * @param {string} output Text returned from AU3Check.
  * @param {vscode.DiagnosticCollection} collection - The diagnostic collection to update.
+ * @param {vscode.Uri} docURI - The URI of the document that was checked
  */
-export const parseAu3CheckOutput = (output, collection) => {
-  const OUTPUT_REGEXP = /"(?<scriptPath>.+)"\((?<line>\d{1,4}),(?<position>\d{1,4})\)\s:\s(?<severity>warning|error):\s(?<description>.+)\./gm;
+export const parseAu3CheckOutput = (output, collection, docURI) => {
+  const OUTPUT_REGEXP = /"(?<scriptPath>.+)"\((?<line>\d{1,4}),(?<position>\d{1,4})\)\s:\s(?<severity>warning|error):\s(?<description>.+)\r/gm;
   let matches = null;
   let diagnosticRange;
   let diagnosticSeverity;
   let diagnostics = {};
+
+  if (output.includes('- 0 error(s), 0 warning(s)')) {
+    collection.delete(docURI);
+    return;
+  }
 
   matches = OUTPUT_REGEXP.exec(output);
   while (matches !== null) {
