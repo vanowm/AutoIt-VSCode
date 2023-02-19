@@ -44,7 +44,7 @@ const getLibraryFunctions = (libraryIncludes, doc) => {
   libraryIncludes.forEach(file => {
     const fullPath = findFilepath(file);
     if (fullPath)
-      getIncludeData(fullPath, doc).forEach(newFunc => {
+      Object.keys(getIncludeData(fullPath, doc)).forEach(newFunc => {
         items.push(
           createNewCompletionItem(CompletionItemKind.Function, newFunc, `Function from ${file}`),
         );
