@@ -39,7 +39,7 @@ const isSkippableLine = line => {
   }
 
   if (firstChar === '#') {
-    if (/^#(cs|ce|comments-start|comments-end)/.test(line.text)) {
+    if (/^\s*#(cs|ce|comments-start|comments-end)/.test(line.text)) {
       return false;
     }
     return true;
