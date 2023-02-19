@@ -14,12 +14,11 @@ const { registerCommands } = require('./registerCommands');
 const { parseAu3CheckOutput } = require('./diagnosticUtils');
 const { config } = require('./ai_config').default;
 
-let diagnosticCollection;
-
-const checkAutoItCode = document => {
-  diagnosticCollection.clear();
+const checkAutoItCode = (document, diagnosticCollection) => {
+  let consoleOutput = '';
 
   if (!config.enableDiagnostics) {
+    diagnosticCollection.clear();
     return;
   }
 
@@ -41,11 +40,15 @@ const checkAutoItCode = document => {
     if (data.length === 0) {
       return;
     }
-    parseAu3CheckOutput(data.toString(), diagnosticCollection);
+    consoleOutput += data.toString();
   });
 
   checkProcess.stderr.on('error', error => {
     vscode.window.showErrorMessage(`${config.checkPath} error: ${error}`);
+  });
+
+  checkProcess.on('close', () => {
+    parseAu3CheckOutput(consoleOutput, diagnosticCollection, document.uri);
   });
 };
 
@@ -66,16 +69,28 @@ const activate = ctx => {
 
   registerCommands();
 
-  diagnosticCollection = vscode.languages.createDiagnosticCollection('autoit');
+  const diagnosticCollection = vscode.languages.createDiagnosticCollection('autoit');
   ctx.subscriptions.push(diagnosticCollection);
 
-  vscode.workspace.onDidSaveTextDocument(document => checkAutoItCode(document));
-  vscode.workspace.onDidOpenTextDocument(document => checkAutoItCode(document));
+  vscode.workspace.onDidSaveTextDocument(document =>
+    checkAutoItCode(document, diagnosticCollection),
+  );
+  vscode.workspace.onDidOpenTextDocument(document =>
+    checkAutoItCode(document, diagnosticCollection),
+  );
+  vscode.workspace.onDidCloseTextDocument(document => {
+    diagnosticCollection.delete(document.uri);
+  });
   vscode.window.onDidChangeActiveTextEditor(editor => {
     if (editor) {
-      checkAutoItCode(editor.document);
+      checkAutoItCode(editor.document, diagnosticCollection);
     }
   });
+
+  // Run diagnostic on document that's open when the extension loads
+  if (config.enableDiagnostics && vscode.window.activeTextEditor) {
+    checkAutoItCode(vscode.window.activeTextEditor.document, diagnosticCollection);
+  }
 
   // eslint-disable-next-line no-console
   console.log('AutoIt is now active!');
