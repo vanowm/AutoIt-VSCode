@@ -18,7 +18,7 @@ const { config } = conf;
 
 const checkAutoItCode = (document, diagnosticCollection) => {
   let consoleOutput = '';
-  
+
   if (!config.enableDiagnostics) {
     diagnosticCollection.clear();
     return;
@@ -69,27 +69,23 @@ export const activate = ctx => {
 
   registerCommands(ctx);
 
-  const diagnosticCollection = vscode.languages.createDiagnosticCollection('autoit');
+  const diagnosticCollection = languages.createDiagnosticCollection('autoit');
   ctx.subscriptions.push(diagnosticCollection);
 
-  vscode.workspace.onDidSaveTextDocument(document =>
-    checkAutoItCode(document, diagnosticCollection),
-  );
-  vscode.workspace.onDidOpenTextDocument(document =>
-    checkAutoItCode(document, diagnosticCollection),
-  );
-  vscode.workspace.onDidCloseTextDocument(document => {
+  workspace.onDidSaveTextDocument(document => checkAutoItCode(document, diagnosticCollection));
+  workspace.onDidOpenTextDocument(document => checkAutoItCode(document, diagnosticCollection));
+  workspace.onDidCloseTextDocument(document => {
     diagnosticCollection.delete(document.uri);
   });
-  vscode.window.onDidChangeActiveTextEditor(editor => {
+  window.onDidChangeActiveTextEditor(editor => {
     if (editor) {
       checkAutoItCode(editor.document, diagnosticCollection);
     }
   });
 
   // Run diagnostic on document that's open when the extension loads
-  if (config.enableDiagnostics && vscode.window.activeTextEditor) {
-    checkAutoItCode(vscode.window.activeTextEditor.document, diagnosticCollection);
+  if (config.enableDiagnostics && window.activeTextEditor) {
+    checkAutoItCode(window.activeTextEditor.document, diagnosticCollection);
   }
 
   // eslint-disable-next-line no-console
