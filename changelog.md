@@ -7,21 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
+## [1.0.11] - 2023-02-21
 
 ### Changed
 
-- Ignore case when identifying functions and regions (thanks to [@Danp2](https://github.com/Danp2))
-- Include search made recursive (thanks to [@Danp2](https://github.com/Danp2))
+- Ignore case when identifying functions and regions
+- Include search made recursive
+- Improvements to regex used in extension functions
 
 ### Fixed
 
-- Slow autocompletion suggestions (thanks to [@Danp2](https://github.com/Danp2))
-- Runtime errors when failing with symbol creation (thanks to [@Danp2](https://github.com/Danp2))
-- Can now capture regions with hyphens (thanks to [@Danp2](https://github.com/Danp2))
-- Syntax highlighting for nested comment blocks (thanks to [@Danp2](https://github.com/Danp2))
-- Include paths checked when gathering include data (thanks to [@Danp2](https://github.com/Danp2))
+- Slow autocompletion suggestions
+- Runtime errors when failing with symbol creation
+- Can now capture regions with hyphens
+- Syntax highlighting for nested comment blocks
+- Include paths checked when gathering include data
 - Problem tab not showing errors or warnings
+- AutoIt indentation settings applying to other languages
+
+### Contributors
+
+[@Danp2](https://github.com/Danp2), [@loganch](https://github.com/loganch)
 
 ## [1.0.10] - 2022-12-05
 
@@ -279,6 +285,7 @@ The IntelliSense release!
 - Added the ability to generate a debug MsgBox for a highlighted variable or macro with Ctrl+Shift+D.
 - Added icon, banner color and description for marketplace.
 
+[1.0.11]: https://github.com/loganch/AutoIt-VSCode/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/loganch/AutoIt-VSCode/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/loganch/AutoIt-VSCode/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/loganch/AutoIt-VSCode/compare/v1.0.7...v1.0.8
