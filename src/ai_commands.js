@@ -146,7 +146,7 @@ const aWrapperHotkey = (() => {
   };
 
   return {
-    disable: function (id) {
+    disable(id) {
       clearTimeout(timer);
       count.set(id, id);
       if (count.size == 1) {
@@ -910,7 +910,7 @@ const insertHeader = () => {
   const doc = editor.document;
   const currentLine = editor.selection.active.line;
   const lineText = doc.lineAt(currentLine).text;
-  const UDFCreator = config.UDFCreator;
+  const { UDFCreator } = config;
 
   const findFunc = /(?=\S)(?!;~\s)Func\s+((\w+)\((.+)?\))/i;
   const found = findFunc.exec(lineText);
@@ -981,7 +981,7 @@ const restartScript = () => {
     });
     if (info.status) return killScript(info.thisFile);
   }
-  runScript();
+  return runScript();
 };
 
 export {
