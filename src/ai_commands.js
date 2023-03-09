@@ -726,40 +726,40 @@ const debugMsgBox = () => {
 
 const compileScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile();// Get the current file name
+  const thisFile = getActiveDocumentFile(); // Get the current file name
 
   // Save the file
-  thisDoc.save().then(isSaved => {
+  thisDoc.save().then(() => {
     if (thisDoc.isUntitled)
       return window.showErrorMessage(`"${thisFile}" file must be saved first!`);
 
     if (thisDoc.isDirty)
-      showInformationMessage(`File failed to save, using saved file instead ("${thisFile}")`, { timeout: 30000 });
+      showInformationMessage(`File failed to save, using saved file instead ("${thisFile}")`, {
+        timeout: 30000,
+      });
 
     window.setStatusBarMessage('Compiling script...', 1500);
 
     // Launch the AutoIt Wrapper executable with the script's path
-    procRunner(config.aiPath, [config.wrapperPath, '/ShowGui', '/prod', '/in', thisFile]);
+    return procRunner(config.aiPath, [config.wrapperPath, '/ShowGui', '/prod', '/in', thisFile]);
   });
 };
 
 const tidyScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile();// Get the current file name
+  const thisFile = getActiveDocumentFile(); // Get the current file name
 
   // Save the file
-  thisDoc.save().then(isSaved => {
+  thisDoc.save().then(() => {
     if (thisDoc.isUntitled)
       return window.showErrorMessage(`"${thisFile}" file must be saved first!`);
 
-    if (thisDoc.isDirty)
-      return window.showErrorMessage(`File failed to save ("${thisFile}")`);
+    if (thisDoc.isDirty) return window.showErrorMessage(`File failed to save ("${thisFile}")`);
 
     window.setStatusBarMessage(`Tidying script...${thisFile}`, 1500);
 
     // Launch the AutoIt Wrapper executable with the script's path
-    procRunner(config.aiPath, [config.wrapperPath, '/Tidy', '/in', thisFile]);
-
+    return procRunner(config.aiPath, [config.wrapperPath, '/Tidy', '/in', thisFile]);
   });
 };
 
@@ -768,36 +768,37 @@ const checkScript = () => {
   const thisFile = getActiveDocumentFile();// Get the current file name
 
   // Save the file
-  thisDoc.save().then(isSaved => {
+  thisDoc.save().then(() => {
     if (thisDoc.isUntitled)
       return window.showErrorMessage(`"${thisFile}" file must be saved first!`);
 
-    if (thisDoc.isDirty)
-      return window.showErrorMessage(`File failed to save ("${thisFile}")`);
+    if (thisDoc.isDirty) return window.showErrorMessage(`File failed to save ("${thisFile}")`);
 
     window.setStatusBarMessage(`Checking script...${thisFile}`, 1500);
 
     // Launch the AutoIt Wrapper executable with the script's path
-    procRunner(config.aiPath, [config.wrapperPath, '/AU3check', '/prod', '/in', thisFile]);
+    return procRunner(config.aiPath, [config.wrapperPath, '/AU3check', '/prod', '/in', thisFile]);
   });
 };
 
 const buildScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile();// Get the current file name
+  const thisFile = getActiveDocumentFile(); // Get the current file name
 
   // Save the file
-  thisDoc.save().then(isSaved => {
+  thisDoc.save().then(() => {
     if (thisDoc.isUntitled)
       return window.showErrorMessage(`"${thisFile}" file must be saved first!`);
 
     if (thisDoc.isDirty)
-      showInformationMessage(`File failed to save, using saved file instead ("${thisFile}")`, { timeout: 30000 });
+      showInformationMessage(`File failed to save, using saved file instead ("${thisFile}")`, {
+        timeout: 30000,
+      });
 
     window.setStatusBarMessage('Building script...', 1500);
 
     // Launch the AutoIt Wrapper executable with the script's path
-    procRunner(config.aiPath, [config.wrapperPath, '/NoStatus', '/prod', '/in', thisFile]);
+    return procRunner(config.aiPath, [config.wrapperPath, '/NoStatus', '/prod', '/in', thisFile]);
   });
 };
 
@@ -853,7 +854,12 @@ const changeConsoleParams = () => {
 const killScript = (thisFile = null) => {
   const data = runners.findRunner({ status: true, thisFile });
   if (!data) {
-    const file = thisFile ? " (" + thisFile.split("\\").splice(-2, 2).join("\\") + ") " : " ";
+    const file = thisFile
+      ? ` (${thisFile
+          .split('\\')
+          .splice(-2, 2)
+          .join('\\')}) `
+      : ' ';
     showInformationMessage(`No script${file}currently is running.`, { timeout: 10000 });
     return;
   }
@@ -890,7 +896,7 @@ const openInclude = () => {
     if (fs.existsSync(currFile)) {
       includeFile = currFile;
     } else {
-      const library = found[0].includes("<");
+      const library = found[0].includes('<');
       includeFile = findFilepath(includeFile, library);
     }
   }
