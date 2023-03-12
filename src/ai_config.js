@@ -20,6 +20,8 @@ const listeners = new Map();
 let listenerId = 0;
 let aiPath = '';
 let _noEvents;
+const isWinOS = process.platform === 'win32';
+let showErrors = false;
 workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
   if (_noEvents || !affectsConfiguration('autoit')) return;
 
@@ -31,6 +33,7 @@ workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
       console.error(er);
     }
   });
+  showErrors = isWinOS;
   getPaths();
 });
 
@@ -77,7 +80,12 @@ function verifyPath(path, data, msgSuffix) {
   return workspace.fs.stat(Uri.parse(`file:///${data.fullPath}`)).then(stats => {
     const type = (data.file !== undefined ? FileType.File : FileType.Directory) | FileType.SymbolicLink;
     if (!(stats.type & type))
-      return showError(path, data, msgSuffix);
+    {
+      if (showErrors)
+        showError(path, data, msgSuffix);
+
+      return;
+    }
 
     if (data.message) {
       data.message.hide();
@@ -87,7 +95,9 @@ function verifyPath(path, data, msgSuffix) {
     return path;
 
   }).catch(() => {
-    showError(path, data, msgSuffix);
+    if (showErrors)
+      showError(path, data, msgSuffix);
+
   });
 }
 
@@ -147,7 +157,8 @@ function getPaths() {
           const data = Object.assign({ fullPath: "" }, defaultPath.check);
           updateFullPath(udfPath[k], data).then(filePath => {
             if (!filePath && !(filePath = findFilepath(udfPath[k], true))) {
-              showError(udfPath[k], data, `${msgSuffix}.udfPath[${k}]`);
+              if (showErrors)
+                showError(udfPath[k], data, `${msgSuffix}.udfPath[${k}]`);
             }
             else
               udfPath[k] = filePath;
