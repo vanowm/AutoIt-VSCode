@@ -101,7 +101,7 @@ function getIncludes(doc) {
     includes = {};
     includesCheck.forEach(script => {
       const newIncludes = getIncludeData(script, doc);
-      includes = { ...includes, ...Object.keys(newIncludes) };
+      Object.assign(includes, newIncludes);
     });
     currentIncludeFiles = includesCheck;
   }
@@ -119,7 +119,7 @@ function getIncludes(doc) {
         fullPath = findFilepath(pattern[1]);
         if (fullPath) {
           newData = getIncludeData(fullPath, doc);
-          includes = { ...includes, ...Object.keys(newData) };
+          Object.assign(includes, newData);
         }
       }
     }
@@ -129,7 +129,7 @@ function getIncludes(doc) {
 }
 
 function getLocalSigs(doc) {
-  const functionPattern = /^[\t ]{0,}Func\s+((\w+)\((.+)?\))/gim;
+  const functionPattern = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
   const text = doc.getText();
   let functions = {};
 
@@ -137,13 +137,10 @@ function getLocalSigs(doc) {
   do {
     pattern = functionPattern.exec(text);
     if (pattern) {
-      functions = {
-        ...functions,
-        [pattern[2]]: {
+      functions[pattern[2]] = {
           label: pattern[1],
           documentation: 'Local Function',
           params: getParams(pattern[3]),
-        },
       };
     }
   } while (pattern);

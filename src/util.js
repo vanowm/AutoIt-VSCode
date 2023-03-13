@@ -234,12 +234,10 @@ const getParams = paramText => {
 
   if (paramText) {
     paramText.split(',').forEach(param => {
-      params = {
-        ...params,
-        [param]: {
-          label: param.trim(),
+      param = param.trim();
+      params[param] = {
+          label: param,
           documentation: '',
-        },
       };
     });
   }
@@ -255,7 +253,7 @@ const getParams = paramText => {
  */
 const getIncludeData = (fileName, doc) => {
   // console.log(fileName)
-  const includeFuncPattern = /(?=\S)(?!;~\s)Func\s+((\w+)\((.+)?\))/gi;
+  const includeFuncPattern = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
   const functions = {};
   let filePath = getIncludePath(fileName, doc);
   if (!fs.existsSync(filePath)) {
