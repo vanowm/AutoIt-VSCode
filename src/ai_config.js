@@ -161,7 +161,10 @@ function getPaths() {
     }
     else if (Array.isArray(confValue)) {
       for (let j = 0; j < confValue.length; j++) {
-        const path = (typeof confValue[j] == 'string' ? confValue[j] : '').trim();
+        let path = (typeof confValue[j] == 'string' ? confValue[j] : '').trim();
+
+        if (path === "" && i == "includePaths")
+          path = "Include";
 
         if (defaultPath[j] === undefined)
           defaultPath[j] = Object.assign({ fullPath: "" }, defaultPath[0].check);
