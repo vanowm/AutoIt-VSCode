@@ -107,7 +107,7 @@ const getVariableCompletions = (text, firstChar) => {
  * @returns {Array<Object>} Array of CompletionItem objects
  */
 const getLocalFunctionCompletions = text => {
-  const functionPattern = /\bFunc\s+(\w*)\s*\(/gi;
+  const functionPattern = /^[\t ]*Func\s+(\w+)\s*\(/gim;
   const functions = [];
   const foundFunctions = {};
 
