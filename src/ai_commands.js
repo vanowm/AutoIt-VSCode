@@ -907,7 +907,7 @@ const openInclude = () => {
     return;
   }
 
-  const url = Uri.parse(`file:///${includeFile}`);
+  const url = Uri.file(includeFile);
   window.showTextDocument(url);
 };
 
