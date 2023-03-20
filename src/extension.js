@@ -15,8 +15,13 @@ import { parseAu3CheckOutput } from './diagnosticUtils';
 import conf from './ai_config';
 
 const { config } = conf;
+const isWinOS = process.platform === 'win32';
 
+let checkPathPrev;
 const checkAutoItCode = (document, diagnosticCollection) => {
+  if (!isWinOS)
+    return;
+
   let consoleOutput = '';
 
   if (!config.enableDiagnostics) {
@@ -28,10 +33,14 @@ const checkAutoItCode = (document, diagnosticCollection) => {
     return;
   }
 
-  if (!existsSync(config.checkPath)) {
-    window.showErrorMessage(
-      'Invalid Check Path! Please review AutoIt settings (Check Path in UI, autoit.checkPath in JSON)',
-    );
+  const checkPath = config.checkPath;
+  if (!existsSync(checkPath)) {
+    if (checkPath !== checkPathPrev)
+      window.showErrorMessage(
+        'Invalid Check Path! Please review AutoIt settings (Check Path in UI, autoit.checkPath in JSON)',
+      );
+
+    checkPathPrev = checkPath;
     return;
   }
   const checkProcess = spawn(config.checkPath, [document.fileName], {
