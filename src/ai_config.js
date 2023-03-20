@@ -77,7 +77,7 @@ function fixPath(value, data) {
 
 function verifyPath(path, data, msgSuffix) {
 
-  return workspace.fs.stat(Uri.parse(`file:///${data.fullPath}`)).then(stats => {
+  return workspace.fs.stat(Uri.file(data.fullPath)).then(stats => {
     const type = (data.file !== undefined ? FileType.File : FileType.Directory) | FileType.SymbolicLink;
     if (!(stats.type & type))
     {
