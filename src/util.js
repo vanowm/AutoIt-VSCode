@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { CompletionItemKind, workspace, MarkdownString } = require('vscode');
+const config = require("./ai_config").default.config;
 
 const descriptionHeader = '|Description |Value |\n|:---|:---:|\n';
 const valueFirstHeader = '\n|&nbsp;|&nbsp;&nbsp;&nbsp; |&nbsp;\n|---:|:---:|:---|';
@@ -165,7 +166,7 @@ const signatureToCompletion = (signatures, kind, detail) => {
  */
 const findFilepath = (file, library = true) => {
   // work with copy to avoid changing main config
-  const includePaths = [...workspace.getConfiguration('autoit').get('includePaths')];
+  const includePaths = [...config.includePaths];
   if (!library) {
     // move main library entry to the bottom so that it is searched last
     includePaths.push(includePaths.shift());
