@@ -918,7 +918,7 @@ const insertHeader = () => {
   const lineText = doc.lineAt(currentLine).text;
   const { UDFCreator } = config;
 
-  const findFunc = /(?=\S)(?!;~\s)Func\s+((\w+)\((.+)?\))/i;
+  const findFunc = /^[\t ]*Func\s+(\w+)\s*\((.*)\)/i;
   const found = findFunc.exec(lineText);
 
   if (found === null) {
@@ -926,26 +926,28 @@ const insertHeader = () => {
     return;
   }
   const hdrType =
-    found[2].substring(0, 2) === '__' ? '#INTERNAL_USE_ONLY# ' : '#FUNCTION# =========';
-  let syntaxBegin = `${found[2]}(`;
+    found[1].substring(0, 2) === '__' ? '#INTERNAL_USE_ONLY# ' : '#FUNCTION# =========';
+  let syntaxBegin = `${found[1]}(`;
   let syntaxEnd = ')';
   let paramsOut = 'None';
-  if (found[3]) {
-    const params = found[3].split(',').map((element, index) => {
-      let parameter = element;
+  if (found[2]) {
+    const params = found[2].split(',').map((parameter, index) => {
+      parameter = parameter.trim();
       let tag = '- ';
-      if (element.search('=') !== -1) {
-        tag += '[optional] ';
+      let paramIndex = parameter.search('=');
+      if (paramIndex !== -1) {
+        tag += '[optional] Default is ' + parameter.substring(paramIndex+1).trim() + ".";
         syntaxBegin += '[';
         syntaxEnd = `]${syntaxEnd}`;
       }
-      syntaxBegin += (index ? ', ' : '') + element;
-      if (element.substring(0, 5).toLowerCase() === 'byref') {
-        parameter = element.substring(6); // strip off byref keyword
+      let byref = "";
+      if (parameter.substring(0, 5).toLowerCase() === 'byref') {
+        byref = "ByRef ";
+        parameter = parameter.substring(6).trim(); // strip off byref keyword
         tag += '[in/out] ';
       }
+      syntaxBegin += (index ? ', ' : '') + byref + parameter;
       return parameter
-        .trim()
         .split(' ')[0]
         .padEnd(21)
         .concat(tag);
@@ -955,7 +957,7 @@ const insertHeader = () => {
   }
   const syntaxOut = `${syntaxBegin}${syntaxEnd}`;
   const header = `; ${hdrType}===========================================================================================================
-; Name ..........: ${found[2]}
+; Name ..........: ${found[1]}
 ; Description ...:
 ; Syntax ........: ${syntaxOut}
 ; Parameters ....: ${paramsOut}
