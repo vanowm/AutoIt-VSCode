@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { CompletionItemKind, workspace, MarkdownString } = require('vscode');
-const config = require("./ai_config").default.config;
+const { CompletionItemKind, MarkdownString } = require('vscode');
+const { config } = require('./ai_config').default;
 
 const descriptionHeader = '|Description |Value |\n|:---|:---:|\n';
 const valueFirstHeader = '\n|&nbsp;|&nbsp;&nbsp;&nbsp; |&nbsp;\n|---:|:---:|:---|';
@@ -231,14 +231,14 @@ const getIncludeScripts = (document, docText, scriptsToSearch) => {
 };
 
 const getParams = paramText => {
-  let params = {};
+  const params = {};
 
   if (paramText) {
     paramText.split(',').forEach(param => {
-      param = param.trim();
-      params[param] = {
-          label: param,
-          documentation: '',
+      const paramEntry = param.trim();
+      params[paramEntry] = {
+        label: paramEntry,
+        documentation: '',
       };
     });
   }
