@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Path checks for utility executables (e.g., Au3Check) reduced to occur when changes are made and disabled for non-Windows OSes
+- Simplified regex for functions
+- Trimmed spaces in insertHeader command
+
+### Fixed
+
+- Open include shortcut not working for library UDFs
+- Open include shortcut not working for paths with `#` in them
+- Function autocomplete from include files
+
+### Contributors
+
+[@vanowm](https://github.com/vanowm)
+
 ## [1.0.11] - 2023-02-21
 
 ### Changed
