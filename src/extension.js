@@ -19,8 +19,7 @@ const isWinOS = process.platform === 'win32';
 
 let checkPathPrev;
 const checkAutoItCode = (document, diagnosticCollection) => {
-  if (!isWinOS)
-    return;
+  if (!isWinOS) return;
 
   let consoleOutput = '';
 
@@ -33,7 +32,7 @@ const checkAutoItCode = (document, diagnosticCollection) => {
     return;
   }
 
-  const checkPath = config.checkPath;
+  const { checkPath } = config;
   if (!existsSync(checkPath)) {
     if (checkPath !== checkPathPrev)
       window.showErrorMessage(
