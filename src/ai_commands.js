@@ -455,7 +455,7 @@ function getActiveDocumentFile() {
   return window.activeTextEditor && window.activeTextEditor.document.fileName || "";
 }
 
-function procRunner(cmdPath, args, bAiOutReuse = true) {
+function procRunner(cmdPath, args = [], bAiOutReuse = true) {
   const thisFile = getActiveDocumentFile(),
     processCommand = cmdPath + " " + args,
     runnerPrev = bAiOutReuse && runners.findRunner({ status: false, thisFile, processCommand }),
