@@ -271,6 +271,7 @@ module.exports = {
   libraryIncludePattern,
   completionToHover,
   signatureToCompletion,
+  findFilepath,
   getIncludeData,
   getParams,
   getIncludeScripts,
