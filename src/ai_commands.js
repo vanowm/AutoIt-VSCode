@@ -12,11 +12,16 @@ import { showInformationMessage, showErrorMessage, messages } from './ai_showMes
 const { config } = conf;
 
 const runners = {
-  list: new Map(), //list of running scripts
-  isNewLine: true, //track if previous message ended with a newline
-  lastId: 0, //last id used in global output
-  id: 0, //last launched process id
-  outputName: `extension-output-${require("../package.json").publisher}.${require("../package.json").name}-#`,
+  list: new Map(), // list of running scripts
+  isNewLine: true, // track if previous message ended with a newline
+  lastId: 0, // last id used in global output
+  id: 0, // last launched process id
+  // eslint-disable-next-line global-require
+  outputName: `extension-output-${require('../package.json').publisher}.${
+    // eslint-disable-next-line global-require
+    require('../package.json').name
+  }-#`,
+
   get lastRunning() {
     return this.findRunner({ status: true, thisFile: null });
   },
