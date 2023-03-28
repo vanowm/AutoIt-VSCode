@@ -2,14 +2,14 @@ import { window, Position, workspace, Uri, RelativePattern } from 'vscode';
 import { execFile as launch, spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { decode } from 'iconv-lite';
+import { parse } from 'jsonc-parser';
 import { findFilepath, getIncludeText } from './util';
 import conf from './ai_config';
-const config = conf.config;
-conf.addListener(() => runners.cleanup());
-import { parse } from "jsonc-parser";
-import { commandsList as _commandsList, commandsPrefix } from "./commandsList";
-import { decode, encodingExists } from "iconv-lite";
+import { commandsList as _commandsList, commandsPrefix } from './commandsList';
 import { showInformationMessage, showErrorMessage, messages } from './ai_showMessage';
+
+const { config } = conf;
 
 const runners = {
   list: new Map(), //list of running scripts
@@ -82,6 +82,8 @@ const runners = {
     }
   }
 };//runners
+
+conf.addListener(() => runners.cleanup());
 
 window.onDidChangeVisibleTextEditors(list => {
   const out = runners.isAiOutVisible();
