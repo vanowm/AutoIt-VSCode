@@ -88,6 +88,9 @@ const runners = {
     return null;
   },
 
+  /**
+   * Removes finished runners from the list and handles their cleanup
+   */
   cleanup() {
     const now = new Date().getTime();
     const timeout = config.multiOutputFinishedTimeout * 1000;
