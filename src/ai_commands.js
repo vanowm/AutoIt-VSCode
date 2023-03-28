@@ -10,6 +10,7 @@ import { commandsList as _commandsList, commandsPrefix } from './commandsList';
 import { showInformationMessage, showErrorMessage, messages } from './ai_showMessage';
 
 const { config } = conf;
+const aiOutCommon = window.createOutputChannel('AutoIt (global)', 'vscode-autoit-output');
 
 /**
  * Get the file name of the active document in the editor.
@@ -66,45 +67,73 @@ const runners = {
     return found ? { runner: found[0], info: found[1] } : null;
   },
 
+  /**
+   * Checks if the AutoIt output window is currently visible.
+   * @returns {Object|null} An object containing the ID, name, and output window of the AutoIt output, or null if the output is not visible
+   */
   isAiOutVisible() {
-    for (let i = 0, index, filename; i < window.visibleTextEditors.length; i++) {
-      filename = window.visibleTextEditors[i].document.fileName;
-      if (this.outputName === filename.substring(0, this.outputName.length)) {
-        filename = filename.substring(this.outputName.length);
-        index = filename.indexOf("-");
-        return { id: filename.substring(0, index), name: filename.substring(index + 1), output: window.visibleTextEditors[i] };
+    for (let i = 0; i < window.visibleTextEditors.length; i += 1) {
+      const editor = window.visibleTextEditors[i];
+      const { fileName } = editor.document;
+      if (fileName.startsWith(this.outputName)) {
+        const rest = fileName.slice(this.outputName.length);
+        const index = rest.indexOf('-');
+        if (index !== -1) {
+          const id = rest.slice(0, index);
+          const name = rest.slice(index + 1);
+          return { id, name, output: editor };
+        }
       }
     }
-    return;
+    return null;
   },
 
   cleanup() {
     const now = new Date().getTime();
     const timeout = config.multiOutputFinishedTimeout * 1000;
     const endTime = now - timeout;
-    //get list of finished processes, ordered by endTime descent
-    const values = [...this.list.entries()].filter(a => !a[1].status).sort((a, b) => b[1].endTime - a[1].endTime);
-    for (let i = 0; i < values.length; i++) {
+    // get list of finished processes, ordered by endTime descent
+    const values = [...this.list.entries()]
+      .filter(a => !a[1].status)
+      .sort((a, b) => b[1].endTime - a[1].endTime);
+    for (let i = 0; i < values.length; i += 1) {
       const [runner, info] = values[i];
-      const _aiOutCommon = aiOutCommon;
       clearTimeout(info.timer);
-      info.callback = () => {
-        info._aiOut.flush();
-        if (info.aiOut !== _aiOutCommon)
-          info.aiOut.dispose();
-        const isAiOutVisible = this.isAiOutVisible();
-        if (isAiOutVisible && isAiOutVisible.name == info.aiOut.name)
-          _aiOutCommon.show(true); //switch to common output
-
-        this.list.delete(runner);
-      };
-      if (i >= config.multiOutputMaxFinished || (config.multiOutputFinishedTimeout && info.endTime < endTime))
-        info.callback();
-      else
-        info.timer = config.multiOutputFinishedTimeout ? setTimeout(info.callback.bind(this), info.endTime - endTime) : null;
+      if (
+        i >= config.multiOutputMaxFinished ||
+        (config.multiOutputFinishedTimeout && info.endTime < endTime)
+      ) {
+        this.cleanupFinishedRunner(info, runner);
+      } else {
+        info.timer = config.multiOutputFinishedTimeout
+          ? setTimeout(info.callback.bind(this), info.endTime - endTime)
+          : null;
+      }
     }
-  }
-};//runners
+  },
+
+  /**
+   * Cleans up a finished runner by flushing its output and disposing of its output window, if necessary.
+   * @param {Object} info - Information about the finished runner, including its callback and output window.
+   */
+  cleanupFinishedRunner(info, runner) {
+    const localAiOutCommon = aiOutCommon;
+    // eslint-disable-next-line no-param-reassign
+    info.callback = () => {
+      // eslint-disable-next-line no-underscore-dangle
+      info._aiOut.flush();
+      if (info.aiOut !== localAiOutCommon) {
+        info.aiOut.dispose();
+      }
+      const aiOutVisible = this.isAiOutVisible();
+      if (aiOutVisible && aiOutVisible.name === info.aiOut.name) {
+        localAiOutCommon.show(true); // switch to common output
+      }
+      this.list.delete(runner);
+    };
+    info.callback();
+  },
+}; // runners
 
 conf.addListener(() => runners.cleanup());
 
@@ -200,7 +229,7 @@ const aWrapperHotkey = (() => {
   };
 })();
 
-const aiOutCommon = window.createOutputChannel('AutoIt (global)', 'vscode-autoit-output');
+
 
 const AiOut = ({ id, aiOutProcess }) => {
   let prevLine = "",
