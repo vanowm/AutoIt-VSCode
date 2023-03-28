@@ -57,25 +57,13 @@ const runners = {
    * @returns {Object|null} The runner and its associated info, or null if no runner is found.
    */
   findRunner(filter = { status: true, thisFile: null }) {
-    const list = Array.from(this.list.entries()).reverse();
+    const list = [...this.list.entries()].reverse();
+    // eslint-disable-next-line no-unused-vars
+    const found = list.find(([_, info]) =>
+      Object.entries(filter).every(([key, value]) => value === null || value === info[key]),
+    );
 
-    for (const [runner, info] of list) {}
-
-    for (let list = [...this.list.entries()], i = list.length - 1; i >= 0; i--) {
-      const [runner, info] = list[i];
-      let good = true;
-      for (let f in filter) {
-        if (filter[f] !== null && filter[f] !== info[f]) {
-          good = false;
-          break;
-        }
-      }
-      if (good)
-        return { runner, info };
-
-
-    }
-    return null;
+    return found ? { runner: found[0], info: found[1] } : null;
   },
 
   isAiOutVisible() {
