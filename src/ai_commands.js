@@ -11,6 +11,25 @@ import { showInformationMessage, showErrorMessage, messages } from './ai_showMes
 
 const { config } = conf;
 
+/**
+ * Get the file name of the active document in the editor.
+ *
+ * Note that `window.activeTextEditor.document.fileName` is not available in some situations
+ * (like when `runScript()` is executed in the settings tab).
+ *
+ * @returns {string} The file name of the active document, or an empty string if it's not available.
+ */
+function getActiveDocumentFile() {
+  if (!window.activeTextEditor) {
+    return '';
+  }
+  const { document } = window.activeTextEditor;
+  if (!document || !document.fileName) {
+    return '';
+  }
+  return document.fileName;
+}
+
 const runners = {
   list: new Map(), // list of running scripts
   isNewLine: true, // track if previous message ended with a newline
@@ -30,7 +49,18 @@ const runners = {
     return this.findRunner({ status: true, thisFile: getActiveDocumentFile() });
   },
 
+  /**
+   * Find the first runner in the list that matches the given filter criteria.
+   * @param {Object} [filter={ status: true, thisFile: null }] - An object containing the filter criteria.
+   * @param {boolean} [filter.status=true] - The status of the runner to look for.
+   * @param {string|null} [filter.thisFile=null] - The file associated with the runner to look for.
+   * @returns {Object|null} The runner and its associated info, or null if no runner is found.
+   */
   findRunner(filter = { status: true, thisFile: null }) {
+    const list = Array.from(this.list.entries()).reverse();
+
+    for (const [runner, info] of list) {}
+
     for (let list = [...this.list.entries()], i = list.length - 1; i >= 0; i--) {
       const [runner, info] = list[i];
       let good = true;
@@ -454,13 +484,7 @@ function getTime() {
   return new Date().toLocaleString('sv', { hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3 }).replace(',', '.');
 }
 
-/*
-window.activeTextEditor.document.fileName is not available in some situations
-(like when runScript() executed in settings tab)
-*/
-function getActiveDocumentFile() {
-  return window.activeTextEditor && window.activeTextEditor.document.fileName || "";
-}
+
 
 function procRunner(cmdPath, args = [], bAiOutReuse = true) {
   const thisFile = getActiveDocumentFile(),
