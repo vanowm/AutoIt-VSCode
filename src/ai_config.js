@@ -1,6 +1,7 @@
 import { workspace, Uri, FileType } from 'vscode';
 import { showErrorMessage } from './ai_showMessage';
-import { findFilepath } from './util';
+import fs from 'fs';
+import path from 'path';
 
 const conf = {
   data: workspace.getConfiguration('autoit'),
@@ -228,6 +229,36 @@ function noEvents(value) {
   _noEvents = value;
 }
 
+/**
+ * Checks a filename with the include paths for a valid path
+ * @param {string} file - the filename to append to the paths
+ * @param {boolean} library - Search Autoit library first?
+ * @returns {(string|boolean)} Full path if found to exist or false
+ */
+const findFilepath = (file, library = true) => {
+  // work with copy to avoid changing main config
+  const includePaths = [...config.includePaths];
+  if (!library) {
+    // move main library entry to the bottom so that it is searched last
+    includePaths.push(includePaths.shift());
+  }
+
+  let newPath;
+  const pathFound = includePaths.some(iPath => {
+    newPath = path.normalize(`${iPath}\\`) + file;
+    if (fs.existsSync(newPath)) {
+      return true;
+    }
+    return false;
+  });
+
+  if (pathFound && newPath) {
+    return newPath;
+  }
+  return false;
+};
+
+
 const config = new Proxy(conf, {
   get(target, prop) {
     const val = target.defaultPaths[prop];
@@ -250,4 +281,5 @@ export default {
   addListener,
   removeListener,
   noEvents,
+  findFilepath
 };
