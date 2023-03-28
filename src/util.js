@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { CompletionItemKind, MarkdownString } = require('vscode');
-const { config } = require('./ai_config').default;
+const { findFilepath } = require('./ai_config').default;
 
 const descriptionHeader = '|Description |Value |\n|:---|:---:|\n';
 const valueFirstHeader = '\n|&nbsp;|&nbsp;&nbsp;&nbsp; |&nbsp;\n|---:|:---:|:---|';
@@ -158,34 +158,6 @@ const signatureToCompletion = (signatures, kind, detail) => {
   return completionSet;
 };
 
-/**
- * Checks a filename with the include paths for a valid path
- * @param {string} file - the filename to append to the paths
- * @param {boolean} library - Search Autoit library first?
- * @returns {(string|boolean)} Full path if found to exist or false
- */
-const findFilepath = (file, library = true) => {
-  // work with copy to avoid changing main config
-  const includePaths = [...config.includePaths];
-  if (!library) {
-    // move main library entry to the bottom so that it is searched last
-    includePaths.push(includePaths.shift());
-  }
-
-  let newPath;
-  const pathFound = includePaths.some(iPath => {
-    newPath = path.normalize(`${iPath}\\`) + file;
-    if (fs.existsSync(newPath)) {
-      return true;
-    }
-    return false;
-  });
-
-  if (pathFound && newPath) {
-    return newPath;
-  }
-  return false;
-};
 
 /**
  * Generates an array of Include scripts to search
