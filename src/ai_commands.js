@@ -140,22 +140,29 @@ const runners = {
 
 conf.addListener(() => runners.cleanup());
 
-window.onDidChangeVisibleTextEditors(list => {
-  const out = runners.isAiOutVisible();
-  if (!out || !config.outputMaxHistoryLines)
-    return;
+/**
+ * Trims the output text in the visible AutoIt output to the max number of lines
+ * set in the configuration.
+ *
+ * If the number of lines in the output text is more than the max, the excess lines
+ * are removed and the rest are displayed.
+ * @returns {void}
+ */
+const trimOutputLines = () => {
+  {
+    const out = runners.isAiOutVisible();
+    if (!out || !config.outputMaxHistoryLines) return;
 
-  if (out.output.document.lineCount > config.outputMaxHistoryLines) {
-    const text = out.output.document.getText();
-    const lines = text.split(/\r?\n/);
-    let ret = "";
-    for (let i = lines.length - config.outputMaxHistoryLines - 2; i < lines.length; i++)
-      ret += lines[i] + (i < lines.length - 1 ? "\r\n" : "");
-
-    aiOutCommon.replace(ret);
+    if (out.output.document.lineCount > config.outputMaxHistoryLines) {
+      const text = out.output.document.getText();
+      const lines = text.split(/\r?\n/);
+      const outputText = lines.slice(-config.outputMaxHistoryLines).join('\r\n');
+      aiOutCommon.replace(outputText);
+    }
   }
+};
 
-});
+window.onDidChangeVisibleTextEditors(trimOutputLines());
 
 //AutoIt3Wrapper.au3 sets CTRL+Break and CTRL+ALT+Break hotkeys
 //they interfere with this extension (unless user changed hotkeys)
