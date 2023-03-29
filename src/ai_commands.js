@@ -765,15 +765,22 @@ function getDebugText() {
   return {};
 }
 
+/**
+ * Get the indent of the current line.
+ *
+ * @return {string} The indent of the current line.
+ */
 function getIndent() {
   const editor = window.activeTextEditor;
   const doc = editor.document;
   const line = doc.lineAt(editor.selection.active.line);
 
-  if (line.isEmptyOrWhitespace) { return ''; }
+  if (line.isEmptyOrWhitespace) {
+    return '';
+  }
 
   // Grab the whole line
-  const text = line.text;
+  const { text } = line;
   // Get the indent of the current line
   const findIndent = /(\s*).+/;
   return findIndent.exec(text)[1];
