@@ -164,82 +164,95 @@ const trimOutputLines = () => {
 
 window.onDidChangeVisibleTextEditors(trimOutputLines());
 
-//AutoIt3Wrapper.au3 sets CTRL+Break and CTRL+ALT+Break hotkeys
-//they interfere with this extension (unless user changed hotkeys)
-//this will disable hotkeys via AutoIt3Wrapper.ini while script is running
-//and restore original (or if no .ini existed it will be deleted)
-//when AutoIt3Wrapper detected running, or after 5 seconds
+/**
+ * An object containing methods to disable and reset hotkeys set by AutoIt3Wrapper.
+ *
+ * AutoIt3Wrapper.au3 sets CTRL+Break and CTRL+ALT+Break hotkeys.
+ * They interfere with this extension (unless user changed hotkeys).
+ * This will disable hotkeys via AutoIt3Wrapper.ini while script is running
+ * and restore original (or if no .ini existed it will be deleted)
+ * when AutoIt3Wrapper detected running, or after 5 seconds
+ */
 const aWrapperHotkey = (() => {
-  let dataOrig, data, ini, timer, count = new Map();
-  const regex = /(SciTE_(STOPEXECUTE|RESTART)\s*=).*/gi,
-    env = process.env;
+  const regex = /(SciTE_(STOPEXECUTE|RESTART)\s*=).*/gi;
+  const { env } = process;
+  let dataOrig;
+  let data;
+  let ini;
+  let timer;
+  let disabled = false;
+
+  /**
+   * Reads the AutoIt3Wrapper.ini file and returns its data as an object.
+   * @returns {object} An object with two properties: `ini` (the path to the
+   * AutoIt3Wrapper.ini file) and `data` (the contents of the file).
+   */
   const fileData = () => {
-    ini = dataOrig = null;
-    data = "";
-    //we should not cache this
-    if (env.SCITE_USERHOME && fs.existsSync(env.SCITE_USERHOME + "/AutoIt3Wrapper"))
-      ini = env.SCITE_USERHOME + "/AutoIt3Wrapper/AutoIt3Wrapper.ini";
-    else if (env.SCITE_HOME && fs.existsSync(env.SCITE_HOME + "/AutoIt3Wrapper"))
-      ini = env.SCITE_HOME + "/AutoIt3Wrapper/AutoIt3Wrapper.ini";
-    else
-      ini = path.dirname(config.wrapperPath) + "/AutoIt3Wrapper.ini";
+    ini = null;
+    data = '';
+
+    // We should not cache this
+    if (env.SCITE_USERHOME && fs.existsSync(`${env.SCITE_USERHOME}\\AutoIt3Wrapper`))
+      ini = `${env.SCITE_USERHOME}\\AutoIt3Wrapper\\AutoIt3Wrapper.ini`;
+    else if (env.SCITE_HOME && fs.existsSync(`${env.SCITE_HOME}/AutoIt3Wrapper`))
+      ini = `${env.SCITE_HOME}\\AutoIt3Wrapper\\AutoIt3Wrapper.ini`;
+    else if (fs.existsSync(`${path.dirname(config.wrapperPath)}\\AutoIt3Wrapper.ini`))
+      ini = `${path.dirname(config.wrapperPath)}\\AutoIt3Wrapper.ini`;
+    else ini = `${path.dirname(config.wrapperPath)}\\AutoIt3Wrapper.ini`;
 
     try {
-      dataOrig = data = fs.readFileSync(ini, 'utf-8');
-    } catch (er) { }
-    const other = data.match(/^\s*\[Other\]\s*$/im);
-    const hotkeys = { STOPEXECUTE: 0, RESTART: 0 };
-    if (other) {
-      regex.lastIndex = other.index;
-      let res;
-      while ((res = regex.exec(data))) {
-        data = data.substring(0, res.index) + res[1] + data.substring(res.index + res[0].length);
-        regex.lastIndex -= res[0].length - res[1].length;
-        hotkeys[res[2].toUpperCase()]++;
-      }
-    }
-    else {
-      data += `\r\n[Other]`;
-    }
-    if (!hotkeys.STOPEXECUTE)
-      data += `\r\nSciTE_STOPEXECUTE=`;
-    if (!hotkeys.RESTART)
-      data += `\r\nSciTE_RESTART=`;
+      dataOrig = fs.readFileSync(ini, 'utf-8');
+      data = dataOrig.replace(regex, (match, hotkeySetting, hotKeyName) => {
+        if (hotKeyName.toUpperCase() === 'STOPEXECUTE') {
+          disabled = true;
+          return 'SciTE_STOPEXECUTE=';
+        }
+        if (hotKeyName.toUpperCase() === 'RESTART') {
+          disabled = true;
+          return 'SciTE_RESTART=';
+        }
+        return match;
+      });
 
-    return { ini, data, dataOrig };
+      if (!disabled) {
+        data += '\r\n[Other]\r\nSciTE_STOPEXECUTE=\r\nSciTE_RESTART=';
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(`Error reading AutoIt3Wrapper.ini: ${error.message}`);
+    }
+
+    return { ini, data };
   };
 
   return {
-    disable(id) {
+    disable: () => {
+      disabled = true;
       clearTimeout(timer);
-      count.set(id, id);
-      if (count.size == 1) {
-        const { ini, data } = fileData();
-        try {
-          fs.writeFileSync(ini, data, "utf-8");
-        } catch (er) { }
+      const { iniPath, iniData } = fileData();
+      try {
+        fs.writeFileSync(iniPath, iniData, 'utf-8');
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(`Error writing AutoIt3Wrapper.ini: ${error.message}`);
       }
-      timer = setTimeout(() => this.reset(id), 5000);
-      return id;
+      timer = setTimeout(() => this.reset(), 5000);
     },
-    reset: (id) => {
+
+    reset: () => {
       clearTimeout(timer);
-      count.delete(id);
-      if (!ini || count.size)
-        return;
+      disabled = false;
+      if (!ini) return;
 
       try {
-        if (dataOrig === null)
-          fs.rmSync(ini);
-        else
-          fs.writeFileSync(ini, dataOrig, "utf-8");
-      } catch (er) { }
-      ini = dataOrig = data = null;
-    }
+        fs.writeFileSync(ini, dataOrig, 'utf-8');
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error(`Error restoring AutoIt3Wrapper.ini: ${error.message}`);
+      }
+    },
   };
 })();
-
-
 
 const AiOut = ({ id, aiOutProcess }) => {
   let prevLine = "",
