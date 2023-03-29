@@ -255,12 +255,12 @@ const aWrapperHotkey = (() => {
 })();
 
 const AiOut = ({ id, aiOutProcess }) => {
-  let prevLine = "",
-    prevLineTimer,
-    isNewLineProcess = true;
+  let prevLine = '';
+  let prevLineTimer;
+  let isNewLineProcess = true;
 
-  const spacer = " ", //using U+00A0 NO-BREAK SPACE character to avoid white-space character highlight.
-    prefixId = "#" + id + ":" + spacer,
+  const spacer = ' '; // using U+00A0 NO-BREAK SPACE character to avoid white-space character highlight.
+  const prefixId = `#${  id  }:${  spacer}`;
     prefixEmpty = "".padStart(prefixId.length, spacer),
     hotkeyFailedMsg = [
       [/!!?>Failed Setting Hotkey\(s\)(?::|...)[\r\n]*/gi,
