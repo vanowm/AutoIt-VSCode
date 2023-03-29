@@ -158,7 +158,6 @@ const signatureToCompletion = (signatures, kind, detail) => {
   return completionSet;
 };
 
-
 /**
  * Generates an array of Include scripts to search
  * that includes the full range of the region's body
@@ -202,6 +201,11 @@ const getIncludeScripts = (document, docText, scriptsToSearch) => {
   }
 };
 
+/**
+ * Returns an object with each parameter as a key and an object with label and documentation properties as its value.
+ * @param {string} paramText - A string of comma-separated parameters.
+ * @returns {Object} An object with each parameter as a key and an object with label and documentation properties as its value.
+ */
 const getParams = paramText => {
   const params = {};
 
