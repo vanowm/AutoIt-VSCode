@@ -1,5 +1,10 @@
 import { Diagnostic, DiagnosticSeverity, Range, Position, Uri } from 'vscode';
 
+/**
+ * Returns the diagnostic severity based on the severity string.
+ * @param {string} severityString - The severity string to convert to DiagnosticSeverity.
+ * @returns {DiagnosticSeverity} - The DiagnosticSeverity based on the severity string.
+ */
 export const getDiagnosticSeverity = severityString => {
   switch (severityString) {
     case 'warning':
@@ -9,12 +14,27 @@ export const getDiagnosticSeverity = severityString => {
   }
 };
 
+/**
+ * Returns a diagnostic range for a given line and position.
+ * @param {number} line - The line number.
+ * @param {number} position - The position number.
+ * @returns {Range} - The diagnostic range.
+ */
 export const getDiagnosticRange = (line, position) => {
   const diagnosticPosition = new Position(parseInt(line, 10) - 1, parseInt(position, 10) - 1);
 
   return new Range(diagnosticPosition, diagnosticPosition);
 };
 
+/**
+ * Adds a new diagnostic to an object of diagnostics.
+ * @param {Object} currentDiagnostics - The current diagnostics object.
+ * @param {string} scriptPath - The path of the script that the diagnostic is for.
+ * @param {Range} range - The range of the diagnostic.
+ * @param {string} description - The description of the diagnostic.
+ * @param {number} severity - The severity of the diagnostic.
+ * @returns {Object} - The updated diagnostics object.
+ */
 export const updateDiagnostics = (currentDiagnostics, scriptPath, range, description, severity) => {
   const diagnosticToAdd = new Diagnostic(range, description, severity);
   const updatedDiagnostics = currentDiagnostics;
