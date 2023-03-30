@@ -162,9 +162,7 @@ const trimOutputLines = () => {
   }
 };
 
-window.onDidChangeVisibleTextEditors(() => {
-  trimOutputLines();
-});
+window.onDidChangeVisibleTextEditors(trimOutputLines);
 
 /**
  * An object containing methods to disable and reset hotkeys set by AutoIt3Wrapper.
