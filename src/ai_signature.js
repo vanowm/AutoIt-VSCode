@@ -131,16 +131,16 @@ function getIncludes(doc) {
 function getLocalSigs(doc) {
   const functionPattern = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
   const text = doc.getText();
-  let functions = {};
+  const functions = {};
 
   let pattern = null;
   do {
     pattern = functionPattern.exec(text);
     if (pattern) {
       functions[pattern[2]] = {
-          label: pattern[1],
-          documentation: 'Local Function',
-          params: getParams(pattern[3]),
+        label: pattern[1],
+        documentation: 'Local Function',
+        params: getParams(pattern[3]),
       };
     }
   } while (pattern);
