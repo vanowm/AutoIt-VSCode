@@ -10,6 +10,7 @@ const trueFalseHeader = `\n|&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;
 const opt = '**[optional]**';
 const br = '\u0020\u0020';
 const defaultZero = `${br + br}\`Default = 0\``;
+const functionDefinitionRegex = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
 
 const setDetailAndDocumentation = (array, detail, doc) => {
   const newArray = array.map(item => {
@@ -223,32 +224,55 @@ const getParams = paramText => {
 };
 
 /**
+ * Extracts function data from pattern and returns an object containing function name and object
+ * @param {RegExpExecArray} functionMatch The results of the includeFuncPattern match
+ * @param {string} fileText The contents of the AutoIt Script
+ * @param {string} fileName The name of the AutoIt Script
+ * @returns {Object} Object containing function name and object
+ */
+const buildFunctionSignature = (functionMatch, fileText, fileName) => {
+  const functionName = functionMatch[2];
+  const functionLabel = functionMatch[1];
+  const headerRegex = new RegExp(
+    `;\\s*Name\\s*\\.+:\\s+${functionName}\\s*[\r\n];\\s+Description\\s*\\.+:\\s+(?<description>.+)`,
+  );
+  const headerMatch = fileText.match(headerRegex);
+  const description = headerMatch ? `${headerMatch.groups.description}\r` : '';
+  const functionDocumentation = `${description}Included from ${fileName}`;
+
+  return {
+    functionName,
+    functionObject: {
+      label: functionLabel,
+      documentation: functionDocumentation,
+      params: getParams(functionMatch[3]),
+    },
+  };
+};
+
+/**
  * Returns an object of AutoIt functions found within a VSCode TextDocument
- * @param {string} fileName
- * @param {vscode.TextDocument} doc
- * @returns {Object} Object of functions in file
+ * @param {string} fileName The name of the AutoIt script
+ * @param {vscode.TextDocument} doc The  TextDocument object representing the AutoIt script
+ * @returns {Object} Object containing SignatureInformation objects
  */
 const getIncludeData = (fileName, doc) => {
-  // console.log(fileName)
-  const includeFuncPattern = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
   const functions = {};
   let filePath = getIncludePath(fileName, doc);
+
   if (!fs.existsSync(filePath)) {
     // Find first instance using include paths
     filePath = findFilepath(fileName, false);
   }
-  let pattern = null;
+  let functionMatch = null;
   const fileData = getIncludeText(filePath);
   do {
-    pattern = includeFuncPattern.exec(fileData);
-    if (pattern) {
-      functions[pattern[2]] = {
-        label: pattern[1],
-        documentation: `Function from ${fileName}`,
-        params: getParams(pattern[3]),
-      };
+    functionMatch = functionDefinitionRegex.exec(fileData);
+    if (functionMatch) {
+      const functionData = buildFunctionSignature(functionMatch, fileData, fileName);
+      functions[functionData.functionName] = functionData.functionObject;
     }
-  } while (pattern);
+  } while (functionMatch);
 
   return functions;
 };
@@ -279,4 +303,6 @@ module.exports = {
   getIncludeData,
   getParams,
   getIncludeScripts,
+  buildFunctionSignature,
+  functionDefinitionRegex,
 };

@@ -10,8 +10,9 @@ import {
   findFilepath,
   libraryIncludePattern,
   getIncludeData,
-  getParams,
   AUTOIT_MODE,
+  buildFunctionSignature,
+  functionDefinitionRegex,
 } from './util';
 import defaultSigs from './signatures';
 import DEFAULT_UDFS from './constants';
@@ -128,22 +129,23 @@ function getIncludes(doc) {
   return includes;
 }
 
+/**
+ * Returns an object of AutoIt functions found within the current AutoIt script
+ * @param {vscode.TextDocument} doc The  TextDocument object representing the AutoIt script
+ * @returns {Object} Object containing SignatureInformation objects
+ */
 function getLocalSigs(doc) {
-  const functionPattern = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
   const text = doc.getText();
   const functions = {};
 
-  let pattern = null;
+  let functionMatch = null;
   do {
-    pattern = functionPattern.exec(text);
-    if (pattern) {
-      functions[pattern[2]] = {
-        label: pattern[1],
-        documentation: 'Local Function',
-        params: getParams(pattern[3]),
-      };
+    functionMatch = functionDefinitionRegex.exec(text);
+    if (functionMatch) {
+      const functionData = buildFunctionSignature(functionMatch, text, doc.fileName);
+      functions[functionData.functionName] = functionData.functionObject;
     }
-  } while (pattern);
+  } while (functionMatch);
 
   return functions;
 }
