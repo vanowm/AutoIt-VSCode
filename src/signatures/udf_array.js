@@ -1,6 +1,5 @@
-
-const { opt, br, defaultZero } = require('../util')
-const include = '(Requires: `#include <Array.au3>`)'
+const { opt, br, defaultZero } = require('../util');
+const include = '(Requires: `#include <Array.au3>`)';
 
 const signatures = {
     "_Array1DToHistogram": {
@@ -70,6 +69,6 @@ const signatures = {
             "documentation": `${opt} Column of array to search ${defaultZero}`
         }]
     },
-}
+};
 
 module.exports = signatures
