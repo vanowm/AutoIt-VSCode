@@ -254,158 +254,22 @@ const aWrapperHotkey = (() => {
   };
 })();
 
-const AiOut = ({ id, aiOutProcess }) => {
-  let prevLine = '';
-  let prevLineTimer;
-  let isNewLineProcess = true;
-
-  const spacer = ' '; // using U+00A0 NO-BREAK SPACE character to avoid white-space character highlight.
-  const prefixId = `#${  id  }:${  spacer}`;
-    prefixEmpty = "".padStart(prefixId.length, spacer),
-    hotkeyFailedMsg = [
-      [/!!?>Failed Setting Hotkey\(s\)(?::|...)[\r\n]*/gi,
-        /(?:false)?--> SetHotKey (?:\(\) )?Restart failed(?:,|. -->) SetHotKey (?:\(\) )?Stop failed\.[\r\n]*/gi],
-
-      [/(!!?>Failed Setting Hotkey\(s\)(?::|...)[\r\n]*)?(?:false)?--> SetHotKey (?:\(\) )?Restart failed(?:,|. -->) SetHotKey (?:\(\) )?Stop failed\.[\r\n]*/gi],
-    ],
-    outputText = (aiOut, prop, lines) => { //using separate function, for performance, so it doesn't have to be created for each message
-      const time = getTime();
-
-      let linesProcess = Object.assign([], lines);
-      if (prop == "appendLine") {
-        if (!isNewLineProcess) {
-          isNewLineProcess = true;
-          aiOutProcess.append("\r\n");
-        }
-        if (!runners.isNewLine) {
-          runners.isNewLine = true;
-          aiOut.append("\r\n");
-        }
-      }
-      if (config.outputShowTime == "Process" || config.outputShowTime == "All") {
-        for (let i = 0; i < linesProcess.length; i++) {
-          if (i == linesProcess.length - 1 && linesProcess[i] === "")
-            break;
-
-          if (isNewLineProcess)
-            linesProcess[i] = time + spacer + linesProcess[i];
-
-          isNewLineProcess = true;
-        }
-      }
-      let textProcess = linesProcess.join("\r\n");
-      if (textProcess) {
-        aiOutProcess[prop](textProcess); //process output
-        isNewLineProcess = prop == "appendLine" || textProcess.substring(textProcess.length - 2) == "\r\n";
-      }
-
-      if (runners.lastId != id && !runners.isNewLine) {
-        aiOut.append(prop == "appendLine" ? "" : "\r\n");
-        runners.isNewLine = true;
-      }
-
-      const prefixTime = (config.outputShowTime == "Global" || config.outputShowTime == "All") ? time + spacer : "";
-      for (let i = 0; i < lines.length; i++) {
-        if (i == lines.length - 1 && lines[i] === "")
-          break;
-
-        if (runners.isNewLine) {
-          if (config.multiOutputShowProcessId == "Multi")
-            lines[i] = prefixId + lines[i];
-          else if (config.multiOutputShowProcessId != "None")
-            lines[i] = (runners.lastId == id ? prefixEmpty : prefixId) + lines[i];
-
-          if (prefixTime)
-            lines[i] = prefixTime + lines[i];
-
-          runners.lastId = id;
-        }
-        runners.isNewLine = true;
-      }
-      const textGlobal = lines.join("\r\n");
-      if (textGlobal) {
-        aiOut[prop](textGlobal); //common output
-
-        runners.isNewLine = prop == "appendLine" || textGlobal.substring(textGlobal.length - 2) == "\r\n";
-      }
-    };
-
-  let hotkeyFailedMsgFound = false;
-  //using proxy to "forward" all property calls to aiOutCommon and aiOutProcess
-  return new Proxy(aiOutCommon, {
-    get(aiOut, prop, proxy) {
-      const isFlush = prop == "flush",
-        isError = prop == "error";
-
-      if (isFlush)
-        prop = "append";
-      else if (isError)
-        prop = "appendLine";
-
-      let ret = aiOut[prop];
-      if (ret instanceof Function) {
-        ret = (text) => {
-          if (text === undefined)
-            return;
-          //incoming text maybe split in chunks
-          //to detect message about failed hotkeys we need a complete line
-          //therefore we split text into lines and show right the way only the complete ones
-          //if after 100 milliseconds nothing else received we show the incomplete line
-          clearTimeout(prevLineTimer);
-          const lines = prop == "append" ? text.split(/\r?\n/) : [text];
-          lines[0] = prevLine + lines[0];
-          for (let i = 0; i < lines.length; i++) {
-            if (!hotkeyFailedMsgFound) {
-              for (let r = 0; r < hotkeyFailedMsg.length; r++) {
-                const line = lines[i].replace(hotkeyFailedMsg[r][0], "");
-                if (line == lines[i])
-                  continue;
-
-                hotkeyFailedMsg[r].shift();
-                if (hotkeyFailedMsg[r].length) {
-                  lines.splice(i--, 1);
-                  break;
-                }
-
-                aWrapperHotkey.reset(id);
-                // lines.splice(i--, 1);
-                lines[i] = `+>Setting Hotkeys...--> Press `;
-                if (keybindings[commandsPrefix + "restartScript"])
-                  lines[i] += `${keybindings[commandsPrefix + "restartScript"]} to Restart`;
-
-                if (keybindings[commandsPrefix + "killScript"] || keybindings[commandsPrefix + "killScriptOpened"]) {
-                  if (keybindings[commandsPrefix + "restartScript"])
-                    lines[i] += ` or `;
-
-                  lines[i] += `${keybindings[commandsPrefix + "killScript"] || keybindings[commandsPrefix + "killScriptOpened"]} to Stop.`;
-                }
-                hotkeyFailedMsgFound = true;
-                break;
-              }
-            }
-          }
-          prevLine = !isFlush && prop == "append" ? lines[lines.length - 1] : "";
-          if (prevLine) {
-            //last line is not complete, remove it from current text and delay showing it
-            if (lines.length > 1)
-              lines[lines.length - 1] = "";
-            else
-              lines.pop();
-
-            prevLineTimer = setTimeout(() => proxy.flush(), 100);
-          }
-          if (lines.length)
-            outputText(aiOut, prop, lines);
-
-        };
-      }
-      if (isFlush)
-        ret("");
-
-      return ret;
-    }
-  });
-}; //AiOut
+/**
+ * Returns the current time in a specific format.
+ * @returns {string} The current time in the format "hh:mm:ss.ms".
+ * @example
+ * // returns "10:30:45.123"
+ */
+function getTime() {
+  return new Date()
+    .toLocaleString('sv', {
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      fractionalSecondDigits: 3,
+    })
+    .replace(',', '.');
+}
 
 //get keybindings
 let keybindings; //note, we are defining this variable without value!
@@ -518,13 +382,163 @@ let keybindings; //note, we are defining this variable without value!
   };
 }
 
+const AiOut = ({ id, aiOutProcess }) => {
+  let prevLine = '';
+  let prevLineTimer;
+  let isNewLineProcess = true;
+
+  const spacer = ' '; // using U+00A0 NO-BREAK SPACE character to avoid white-space character highlight.
+  const prefixId = `#${id}:${spacer}`;
+  const prefixEmpty = ''.padStart(prefixId.length, spacer);
+  const hotkeyFailedMsg = [
+    [
+      /!!?>Failed Setting Hotkey\(s\)(?::|...)[\r\n]*/gi,
+      /(?:false)?--> SetHotKey (?:\(\) )?Restart failed(?:,|. -->) SetHotKey (?:\(\) )?Stop failed\.[\r\n]*/gi,
+    ],
+    [
+      /(!!?>Failed Setting Hotkey\(s\)(?::|...)[\r\n]*)?(?:false)?--> SetHotKey (?:\(\) )?Restart failed(?:,|. -->) SetHotKey (?:\(\) )?Stop failed\.[\r\n]*/gi,
+    ],
+  ];
+
+  const outputText = (aiOut, prop, lines) => {
+    // using separate function, for performance, so it doesn't have to be created for each message
+    const time = getTime();
+
+    const linesProcess = Object.assign([], lines);
+    if (prop === 'appendLine') {
+      if (!isNewLineProcess) {
+        isNewLineProcess = true;
+        aiOutProcess.append('\r\n');
+      }
+      if (!runners.isNewLine) {
+        runners.isNewLine = true;
+        aiOut.append('\r\n');
+      }
+    }
+    if (config.outputShowTime === 'Process' || config.outputShowTime === 'All') {
+      for (let i = 0; i < linesProcess.length; i += 1) {
+        if (i === linesProcess.length - 1 && linesProcess[i] === '') break;
+
+        if (isNewLineProcess) linesProcess[i] = time + spacer + linesProcess[i];
+
+        isNewLineProcess = true;
+      }
+    }
+    const textProcess = linesProcess.join('\r\n');
+    if (textProcess) {
+      aiOutProcess[prop](textProcess); // process output
+      isNewLineProcess =
+        prop === 'appendLine' || textProcess.substring(textProcess.length - 2) == '\r\n';
+    }
+
+    if (runners.lastId !== id && !runners.isNewLine) {
+      aiOut.append(prop === 'appendLine' ? '' : '\r\n');
+      runners.isNewLine = true;
+    }
+
+    const prefixTime =
+      config.outputShowTime === 'Global' || config.outputShowTime === 'All' ? time + spacer : '';
+    for (let i = 0; i < lines.length; i += 1) {
+      if (i === lines.length - 1 && lines[i] === '') break;
+
+      if (runners.isNewLine) {
+        // eslint-disable-next-line no-param-reassign
+        if (config.multiOutputShowProcessId === 'Multi') lines[i] = prefixId + lines[i];
+        else if (config.multiOutputShowProcessId !== 'None')
+          // eslint-disable-next-line no-param-reassign
+          lines[i] = (runners.lastId === id ? prefixEmpty : prefixId) + lines[i];
+
+        // eslint-disable-next-line no-param-reassign
+        if (prefixTime) lines[i] = prefixTime + lines[i];
+
+        runners.lastId = id;
+      }
+      runners.isNewLine = true;
+    }
+    const textGlobal = lines.join('\r\n');
+    if (textGlobal) {
+      aiOut[prop](textGlobal); // common output
+
+      runners.isNewLine =
+        prop === 'appendLine' || textGlobal.substring(textGlobal.length - 2) === '\r\n';
+    }
+  };
+
+  let hotkeyFailedMsgFound = false;
+  // using proxy to "forward" all property calls to aiOutCommon and aiOutProcess
+  return new Proxy(aiOutCommon, {
+    get(aiOut, prop, proxy) {
+      const isFlush = prop === 'flush';
+      const isError = prop === 'error';
+
+      // eslint-disable-next-line no-param-reassign
+      if (isFlush) prop = 'append';
+      // eslint-disable-next-line no-param-reassign
+      else if (isError) prop = 'appendLine';
+
+      let ret = aiOut[prop];
+      if (ret instanceof Function) {
+        ret = text => {
+          if (text === undefined) return;
+          // incoming text maybe split in chunks
+          // to detect message about failed hotkeys we need a complete line
+          // therefore we split text into lines and show right the way only the complete ones
+          // if after 100 milliseconds nothing else received we show the incomplete line
+          clearTimeout(prevLineTimer);
+          const lines = prop === 'append' ? text.split(/\r?\n/) : [text];
+          lines[0] = prevLine + lines[0];
+          for (let i = 0; i < lines.length; i += 1) {
+            if (!hotkeyFailedMsgFound) {
+              for (let r = 0; r < hotkeyFailedMsg.length; r += 1) {
+                const line = lines[i].replace(hotkeyFailedMsg[r][0], '');
+                // eslint-disable-next-line no-continue
+                if (line === lines[i]) continue;
+
+                hotkeyFailedMsg[r].shift();
+                if (hotkeyFailedMsg[r].length) {
+                  lines.splice((i -= 1), 1);
+                  break;
+                }
+
+                aWrapperHotkey.reset(id);
+                // lines.splice(i--, 1);
+                lines[i] = `+>Setting Hotkeys...--> Press `;
+                if (keybindings[`${commandsPrefix}restartScript`])
+                  lines[i] += `${keybindings[`${commandsPrefix}restartScript`]} to Restart`;
+
+                if (
+                  keybindings[`${commandsPrefix}killScript`] ||
+                  keybindings[`${commandsPrefix}killScriptOpened`]
+                ) {
+                  if (keybindings[`${commandsPrefix}restartScript`]) lines[i] += ` or `;
+
+                  lines[i] += `${keybindings[`${commandsPrefix}killScript`] ||
+                    keybindings[`${commandsPrefix}killScriptOpened`]} to Stop.`;
+                }
+                hotkeyFailedMsgFound = true;
+                break;
+              }
+            }
+          }
+          prevLine = !isFlush && prop === 'append' ? lines[lines.length - 1] : '';
+          if (prevLine) {
+            // last line is not complete, remove it from current text and delay showing it
+            if (lines.length > 1) lines[lines.length - 1] = '';
+            else lines.pop();
+
+            prevLineTimer = setTimeout(() => proxy.flush(), 100);
+          }
+          if (lines.length) outputText(aiOut, prop, lines);
+        };
+      }
+      if (isFlush) ret('');
+
+      return ret;
+    },
+  });
+}; // AiOut
+
 let hhproc;
-
-function getTime() {
-  return new Date().toLocaleString('sv', { hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3 }).replace(',', '.');
-}
-
-
 
 function procRunner(cmdPath, args = [], bAiOutReuse = true) {
   const thisFile = getActiveDocumentFile(),
