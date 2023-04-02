@@ -205,20 +205,32 @@ const getIncludeScripts = (document, docText, scriptsToSearch) => {
 /**
  * Returns an object with each parameter as a key and an object with label and documentation properties as its value.
  * @param {string} paramText - A string of comma-separated parameters.
+ * @param {string} text - The text from the document
  * @returns {Object} An object with each parameter as a key and an object with label and documentation properties as its value.
  */
-const getParams = paramText => {
+const getParams = (paramText, functionName, text) => {
   const params = {};
 
-  if (paramText) {
-    paramText.split(',').forEach(param => {
-      const paramEntry = param.trim();
-      params[paramEntry] = {
-        label: paramEntry,
-        documentation: '',
-      };
-    });
+  if (!paramText) {
+    return params;
   }
+
+  paramText.split(',').forEach(param => {
+    let paramEntry = param.split('=')[0].trim();
+    if (paramEntry.startsWith('ByRef')) paramEntry = paramEntry.slice(6);
+
+    const parameterDocRegex = new RegExp(
+      `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s*(?<documentation>[^\r]+?);`,
+      'sm',
+    );
+    const paramDocMatch = text.match(parameterDocRegex);
+    const paramDoc = paramDocMatch ? paramDocMatch.groups.documentation : '';
+
+    params[paramEntry] = {
+      label: paramEntry,
+      documentation: paramDoc,
+    };
+  });
 
   return params;
 };
@@ -234,7 +246,7 @@ const buildFunctionSignature = (functionMatch, fileText, fileName) => {
   const functionName = functionMatch[2];
   const functionLabel = functionMatch[1];
   const headerRegex = new RegExp(
-    `;\\s*Name\\s*\\.+:\\s+${functionName}\\s*[\r\n];\\s+Description\\s*\\.+:\\s+(?<description>.+)`,
+    `;\\s*Name\\s*\\.+:\\s+${functionName}\\s*[\r\n];\\s+Description\\s*\\.+:\\s+(?<description>.+)[\r\n];\\s*Syntax`,
   );
   const headerMatch = fileText.match(headerRegex);
   const description = headerMatch ? `${headerMatch.groups.description}\r` : '';
@@ -245,7 +257,7 @@ const buildFunctionSignature = (functionMatch, fileText, fileName) => {
     functionObject: {
       label: functionLabel,
       documentation: functionDocumentation,
-      params: getParams(functionMatch[3]),
+      params: getParams(functionMatch[3], functionName, fileText),
     },
   };
 };
