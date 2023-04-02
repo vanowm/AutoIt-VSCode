@@ -220,9 +220,12 @@ const getParams = (paramText, functionName, text) => {
     if (paramEntry.startsWith('ByRef')) paramEntry = paramEntry.slice(6);
 
     const parameterDocRegex = new RegExp(
-      `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s*(?<documentation>[^\r]+?);`,
-      'sm',
+      `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s(?<documentation>.+)`,
     );
+
+    //   new RegExp(
+    //   `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s*(?<documentation>.+?);`,
+    // );
     const paramDocMatch = text.match(parameterDocRegex);
     const paramDoc = paramDocMatch ? paramDocMatch.groups.documentation : '';
 
