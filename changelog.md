@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Signature help pulls description and parameters from function headers
+
 ### Changed
 
 - Path checks for utility executables (e.g., Au3Check) reduced to occur when changes are made and disabled for non-Windows OSes
