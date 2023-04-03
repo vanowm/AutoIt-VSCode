@@ -54,6 +54,12 @@ const getIncludeText = filePath => {
   return fs.readFileSync(filePath).toString();
 };
 
+/**
+ * Returns the include path of a given file or path based on the provided document.
+ * @param {string} fileOrPath - The file or path to get the include path of.
+ * @param {TextDocument} document - The document object to use for determining the include path.
+ * @returns {string} The include path of the given file or path.
+ */
 const getIncludePath = (fileOrPath, document) => {
   let includePath = '';
 
