@@ -119,8 +119,6 @@ export default languages.registerDocumentSymbolProvider(AUTOIT_MODE, {
 
       funcName = functionPattern.exec(text);
       if (funcName && !found.includes(funcName[0])) {
-        console.log("AVSC", funcName)
-
         const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
 
         if (functionSymbol) {
@@ -191,7 +189,7 @@ export default languages.registerDocumentSymbolProvider(AUTOIT_MODE, {
         }
       }
     }
-console.log("AVSC", result);
+
     return result;
   },
 });
