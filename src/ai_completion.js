@@ -7,12 +7,13 @@ import {
   findFilepath,
   getIncludeData,
   AUTOIT_MODE,
+  functionPattern as _functionPattern,
 } from './util';
 import DEFAULT_UDFS from './constants';
 
 let currentIncludeFiles = [];
 let includes = [];
-
+const functionPattern = _functionPattern.setFlags("gim");
 const createNewCompletionItem = (kind, name, strDetail = 'Document Function') => {
   const compItem = new CompletionItem(name, kind);
 
@@ -106,7 +107,6 @@ const getVariableCompletions = (text, firstChar) => {
  * @returns {Array<Object>} Array of CompletionItem objects
  */
 const getLocalFunctionCompletions = text => {
-  const functionPattern = /^[\t ]*Func\s+(\w+)\s*\(/gim;
   const functions = [];
   const foundFunctions = {};
 

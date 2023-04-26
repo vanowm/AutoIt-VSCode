@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { decode } from 'iconv-lite';
 import { parse } from 'jsonc-parser';
-import { findFilepath, getIncludeText } from './util';
+import { findFilepath, getIncludeText, functionDefinitionRegex } from './util';
 import conf from './ai_config';
 import { commandsList as _commandsList, commandsPrefix } from './commandsList';
 import { showInformationMessage, showErrorMessage, messages } from './ai_showMessage';
@@ -1010,7 +1010,7 @@ const insertHeader = () => {
   const lineText = doc.lineAt(currentLine).text;
   const { UDFCreator } = config;
 
-  const findFunc = /^[\t ]*Func\s+(\w+)\s*\((.*)\)/i;
+  const findFunc = functionDefinitionRegex.setFlags("i");
   const found = findFunc.exec(lineText);
 
   if (found === null) {
@@ -1018,12 +1018,12 @@ const insertHeader = () => {
     return;
   }
   const hdrType =
-    found[1].substring(0, 2) === '__' ? '#INTERNAL_USE_ONLY# ' : '#FUNCTION# =========';
-  let syntaxBegin = `${found[1]}(`;
+    found[2].substring(0, 2) === '__' ? '#INTERNAL_USE_ONLY# ' : '#FUNCTION# =========';
+  let syntaxBegin = `${found[2]}(`;
   let syntaxEnd = ')';
   let paramsOut = 'None';
-  if (found[2]) {
-    const params = found[2].split(',').map((parameter, index) => {
+  if (found[3]) {
+    const params = found[3].split(',').map((parameter, index) => {
       parameter = parameter.trim();
       let tag = '- ';
       let paramIndex = parameter.search('=');
@@ -1049,7 +1049,7 @@ const insertHeader = () => {
   }
   const syntaxOut = `${syntaxBegin}${syntaxEnd}`;
   const header = `; ${hdrType}===========================================================================================================
-; Name ..........: ${found[1]}
+; Name ..........: ${found[2]}
 ; Description ...:
 ; Syntax ........: ${syntaxOut}
 ; Parameters ....: ${paramsOut}

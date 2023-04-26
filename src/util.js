@@ -10,7 +10,9 @@ const trueFalseHeader = `\n|&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;
 const opt = '**[optional]**';
 const br = '\u0020\u0020';
 const defaultZero = `${br + br}\`Default = 0\``;
-const functionDefinitionRegex = /^[\t ]*Func\s+((\w+)\s*\((.*)\))/gim;
+RegExp.prototype.setFlags = function(flags) {
+  return RegExp(this.source, flags);
+};
 
 const setDetailAndDocumentation = (array, detail, doc) => {
   const newArray = array.map(item => {
@@ -139,7 +141,8 @@ const completionToHover = completions => {
 };
 
 const includePattern = /^#include\s"(.+)"/gm;
-const functionPattern = /^[\t ]{0,}Func\s(.+)\(/i;
+const functionPattern = /^[\t ]*(?:volatile[\t ]+)?Func[\t ]+(\w+)[\t ]*\(/i;
+const functionDefinitionRegex = /^[\t ]*(?:volatile[\t ]+)?Func[\t ]+((\w+)[\t ]*\((.*)\))/gim;
 const variablePattern = /(?:["'].*?["'])|(?:;.*)|(\$\w+)/g;
 const regionPattern = /^[\t ]{0,}#region\s[- ]{0,}(.+)/i;
 const libraryIncludePattern = /^#include\s+<([\w.]+\.au3)>/gm;
