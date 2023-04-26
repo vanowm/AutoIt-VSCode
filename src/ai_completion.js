@@ -13,7 +13,7 @@ import DEFAULT_UDFS from './constants';
 
 let currentIncludeFiles = [];
 let includes = [];
-const functionPattern = _functionPattern.setFlags("gim");
+const functionPattern = _functionPattern.setFlags('gim');
 const createNewCompletionItem = (kind, name, strDetail = 'Document Function') => {
   const compItem = new CompletionItem(name, kind);
 
