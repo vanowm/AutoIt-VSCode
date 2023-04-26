@@ -30,7 +30,7 @@ const createVariableSymbol = (variable, variableKind, doc, line, container) => {
 const createFunctionSymbol = (functionName, doc, lineNum) => {
   const pattern = new RegExp(
     // `^Func\\s+\\b(?<funcName>${functionName}\\b).*\\n(?:(?!EndFunc\\b).*\\n)*EndFunc.*\\n?`
-    `Func\\s+\\b(?<funcName>${functionName}+\\b).*?(EndFunc)`,
+    `[\t ]*(?:volatile[\t ]+)?Func[\t ]+\\b(?<funcName>${functionName}+\\b).*?(EndFunc)`,
     'gsi',
   );
   const docText = doc.getText();
