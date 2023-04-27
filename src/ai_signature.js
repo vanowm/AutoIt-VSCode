@@ -138,14 +138,12 @@ function getLocalSigs(doc) {
   const text = doc.getText();
   const functions = {};
 
-  let functionMatch = null;
-  do {
+  let functionMatch = functionDefinitionRegex.exec(text);
+  while (functionMatch) {
+    const functionData = buildFunctionSignature(functionMatch, text, doc.fileName);
+    functions[functionData.functionName] = functionData.functionObject;
     functionMatch = functionDefinitionRegex.exec(text);
-    if (functionMatch) {
-      const functionData = buildFunctionSignature(functionMatch, text, doc.fileName);
-      functions[functionData.functionName] = functionData.functionObject;
-    }
-  } while (functionMatch);
+  }
 
   return functions;
 }
