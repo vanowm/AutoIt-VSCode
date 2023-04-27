@@ -150,45 +150,46 @@ function getLocalSigs(doc) {
   return functions;
 }
 
+/**
+ * Creates a SignatureInformation object from a given signature.
+ * @param {Object} foundSig - The signature to create the SignatureInformation object from.
+ * @returns {SignatureInformation} The created SignatureInformation object.
+ */
+function createSignatureInfo(foundSig) {
+  const signatureInfo = new SignatureInformation(
+    foundSig.label,
+    new MarkdownString(`##### ${foundSig.documentation}`),
+  );
+  signatureInfo.parameters = Object.keys(foundSig.params).map(
+    key =>
+      new ParameterInformation(
+        foundSig.params[key].label,
+        new MarkdownString(foundSig.params[key].documentation),
+      ),
+  );
+  return signatureInfo;
+}
+
 export default languages.registerSignatureHelpProvider(
   AUTOIT_MODE,
   {
+    /**
+     * Provides signature help for a given document and position.
+     * @param {TextDocument} document - The document to provide signature help for.
+     * @param {Position} position - The position in the document to provide signature help for.
+     * @returns {SignatureHelp | null} The signature help or null if no help is available.
+     */
     provideSignatureHelp(document, position) {
-      // Find out what called for sig
       const caller = getCallInfo(document, position);
-      if (caller.func == null) {
-        return null;
-      }
+      if (!caller.func) return null;
 
-      // Integrate user functions
-      const signatures = Object.assign(
-        {},
-        defaultSigs,
-        getIncludes(document),
-        getLocalSigs(document),
-      );
+      const allSignatures = { ...defaultSigs, ...getIncludes(document), ...getLocalSigs(document) };
 
-      // Get the called word from the json files
-      const foundSig = signatures[caller.func];
-      if (foundSig == null) {
-        return null;
-      }
+      const matchedSignature = allSignatures[caller.func];
+      if (!matchedSignature) return null;
 
-      const thisSignature = new SignatureInformation(
-        foundSig.label,
-        new MarkdownString(`##### ${foundSig.documentation}`),
-      );
-      // Enter parameter information into signature information
-      thisSignature.parameters = Object.keys(foundSig.params).map(key => {
-        return new ParameterInformation(
-          foundSig.params[key].label,
-          new MarkdownString(foundSig.params[key].documentation),
-        );
-      });
-
-      // Place signature information into results
       const result = new SignatureHelp();
-      result.signatures = [thisSignature];
+      result.signatures = [createSignatureInfo(matchedSignature)];
       result.activeSignature = 0;
       result.activeParameter = caller.commas;
       return result;
