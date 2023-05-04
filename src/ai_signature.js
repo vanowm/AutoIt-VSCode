@@ -37,17 +37,23 @@ function getParsableCode(code) {
   return reducedCode;
 }
 
+/**
+ * Parses the current function calling for SignatureHelp from a string of AutoIt code.
+ * Gets the second-to-last part (right before the last open parenthesis)
+ * and extracts the function name
+ *
+ * @param {string} code - The AutoIt code to parse.
+ * @returns {?string} - The name of the current function, or null if it couldn't be parsed.
+ */
 function getCurrentFunction(code) {
-  const parenSplit = code.split('(');
+  const functionCallParts = code.split('(');
+  if (functionCallParts.length <= 1) {
+    return null;
+  }
 
-  if (parenSplit.length > 1) {
-    // Get the 2nd to last item (right in front of last open paren)
-    // and clean up the results
-    const parenMatch = parenSplit[parenSplit.length - 2].match(/(.*)\b(\w+)/);
-
-    if (parenMatch) {
-      return parenMatch[2];
-    }
+  const functionCallPart = functionCallParts[functionCallParts.length - 2].match(/(.*)\b(\w+)/);
+  if (functionCallPart) {
+    return functionCallPart[2];
   }
 
   return null;
@@ -85,18 +91,49 @@ function arraysMatch(arr1, arr2) {
   return false;
 }
 
-function getIncludes(doc) {
-  // determines whether includes should be re-parsed or not.
-  const text = doc.getText();
-
-  let includesCheck = [];
-  let pattern;
-  do {
+/**
+ * Retrieves the includes from the given text.
+ *
+ * @param {string} text - The text to search for includes.
+ * @returns {string[]} An array of includes found in the text.
+ */
+function getIncludesFromText(text) {
+  const includesCheck = [];
+  let pattern = includePattern.exec(text);
+  while (pattern) {
+    includesCheck.push(pattern[1]);
     pattern = includePattern.exec(text);
-    if (pattern) {
-      includesCheck.push(pattern[1]);
-    }
-  } while (pattern);
+  }
+  return includesCheck;
+}
+
+/**
+ * Retrieves the library includes from the given text.
+ *
+ * @param {string} text - The text to search for library includes.
+ * @returns {RegExpMatchArray[]} An array of library includes found in the text.
+ */
+function getLibraryIncludesFromText(text) {
+  const libraryIncludes = [];
+  let pattern = libraryIncludePattern.exec(text);
+  while (pattern) {
+    libraryIncludes.push(pattern);
+    pattern = libraryIncludePattern.exec(text);
+  }
+  return libraryIncludes;
+}
+
+/**
+ * Retrieves the includes and library includes from the given document.
+ * Determines whether includes should be re-parsed or not.
+ *
+ * @param {Object} doc - The document to search for includes.
+ * @returns {Object} An object containing the includes found in the document.
+ */
+function getIncludes(doc) {
+  const text = doc.getText();
+  const includesCheck = getIncludesFromText(text);
+  const libraryIncludes = getLibraryIncludesFromText(text);
 
   if (!arraysMatch(includesCheck, currentIncludeFiles)) {
     includes = {};
@@ -107,24 +144,16 @@ function getIncludes(doc) {
     currentIncludeFiles = includesCheck;
   }
 
-  includesCheck = [];
-
-  let filename = '';
-  let fullPath = '';
-  let newData = '';
-  do {
-    pattern = libraryIncludePattern.exec(text);
-    if (pattern) {
-      filename = pattern[1].replace('.au3', '');
-      if (DEFAULT_UDFS.indexOf(filename) === -1) {
-        fullPath = findFilepath(pattern[1]);
-        if (fullPath) {
-          newData = getIncludeData(fullPath, doc);
-          Object.assign(includes, newData);
-        }
+  libraryIncludes.forEach(pattern => {
+    const filename = pattern[1].replace('.au3', '');
+    if (DEFAULT_UDFS.indexOf(filename) === -1) {
+      const fullPath = findFilepath(pattern[1]);
+      if (fullPath) {
+        const newData = getIncludeData(fullPath, doc);
+        Object.assign(includes, newData);
       }
     }
-  } while (pattern);
+  });
 
   return includes;
 }
