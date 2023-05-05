@@ -15,22 +15,54 @@ import { parseAu3CheckOutput } from './diagnosticUtils';
 import conf from './ai_config';
 
 const { config } = conf;
-const isWinOS = process.platform === 'win32';
 
 let checkPathPrev;
-const checkAutoItCode = (document, diagnosticCollection) => {
-  if (!isWinOS) return;
 
-  let consoleOutput = '';
+/**
+ * Runs the check process for the given file and returns the console output.
+ * @param {string} fileName - The name of the file to check.
+ * @returns {Promise<string>} A promise that resolves with the console output of the check process.
+ */
+const runCheckProcess = fileName => {
+  return new Promise((resolve, reject) => {
+    let consoleOutput = '';
+    const checkProcess = execFile(config.checkPath, [fileName], {
+      cwd: dirname(fileName),
+    });
 
+    checkProcess.stdout.on('data', data => {
+      if (data.length === 0) {
+        return;
+      }
+      consoleOutput += data.toString();
+    });
+
+    checkProcess.stderr.on('error', error => {
+      reject(error);
+    });
+
+    checkProcess.on('close', () => {
+      resolve(consoleOutput);
+    });
+  });
+};
+
+const handleCheckProcessError = error => {
+  window.showErrorMessage(`${config.checkPath} ${error}`);
+};
+
+/**
+ * Checks the AutoIt code in the given document and updates the diagnostic collection.
+ * @param {TextDocument} document - The document to check.
+ * @param {DiagnosticCollection} diagnosticCollection - The diagnostic collection to update.
+ */
+const checkAutoItCode = async (document, diagnosticCollection) => {
   if (!config.enableDiagnostics) {
     diagnosticCollection.clear();
     return;
   }
 
-  if (document.languageId !== 'autoit') {
-    return;
-  }
+  if (document.languageId !== 'autoit') return;
 
   const { checkPath } = config;
   if (!existsSync(checkPath)) {
@@ -42,24 +74,13 @@ const checkAutoItCode = (document, diagnosticCollection) => {
     checkPathPrev = checkPath;
     return;
   }
-  const checkProcess = execFile(config.checkPath, [document.fileName], {
-    cwd: dirname(document.fileName),
-  });
 
-  checkProcess.stdout.on('data', data => {
-    if (data.length === 0) {
-      return;
-    }
-    consoleOutput += data.toString();
-  });
-
-  checkProcess.stderr.on('error', error => {
-    window.showErrorMessage(`${config.checkPath} error: ${error}`);
-  });
-
-  checkProcess.on('close', () => {
+  try {
+    const consoleOutput = await runCheckProcess(document.fileName);
     parseAu3CheckOutput(consoleOutput, diagnosticCollection, document.uri);
-  });
+  } catch (error) {
+    handleCheckProcessError(error);
+  }
 };
 
 export const activate = ctx => {
@@ -77,23 +98,25 @@ export const activate = ctx => {
 
   registerCommands(ctx);
 
-  const diagnosticCollection = languages.createDiagnosticCollection('autoit');
-  ctx.subscriptions.push(diagnosticCollection);
+  if (process.platform === 'win32') {
+    const diagnosticCollection = languages.createDiagnosticCollection('autoit');
+    ctx.subscriptions.push(diagnosticCollection);
 
-  workspace.onDidSaveTextDocument(document => checkAutoItCode(document, diagnosticCollection));
-  workspace.onDidOpenTextDocument(document => checkAutoItCode(document, diagnosticCollection));
-  workspace.onDidCloseTextDocument(document => {
-    diagnosticCollection.delete(document.uri);
-  });
-  window.onDidChangeActiveTextEditor(editor => {
-    if (editor) {
-      checkAutoItCode(editor.document, diagnosticCollection);
+    workspace.onDidSaveTextDocument(document => checkAutoItCode(document, diagnosticCollection));
+    workspace.onDidOpenTextDocument(document => checkAutoItCode(document, diagnosticCollection));
+    workspace.onDidCloseTextDocument(document => {
+      diagnosticCollection.delete(document.uri);
+    });
+    window.onDidChangeActiveTextEditor(editor => {
+      if (editor) {
+        checkAutoItCode(editor.document, diagnosticCollection);
+      }
+    });
+
+    // Run diagnostic on document that's open when the extension loads
+    if (config.enableDiagnostics && window.activeTextEditor) {
+      checkAutoItCode(window.activeTextEditor.document, diagnosticCollection);
     }
-  });
-
-  // Run diagnostic on document that's open when the extension loads
-  if (config.enableDiagnostics && window.activeTextEditor) {
-    checkAutoItCode(window.activeTextEditor.document, diagnosticCollection);
   }
 
   // eslint-disable-next-line no-console
