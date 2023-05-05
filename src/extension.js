@@ -16,8 +16,6 @@ import conf from './ai_config';
 
 const { config } = conf;
 
-let checkPathPrev;
-
 /**
  * Runs the check process for the given file and returns the console output.
  * @param {string} fileName - The name of the file to check.
@@ -51,6 +49,16 @@ const handleCheckProcessError = error => {
   window.showErrorMessage(`${config.checkPath} ${error}`);
 };
 
+const validateCheckPath = checkPath => {
+  if (!existsSync(checkPath)) {
+    window.showErrorMessage(
+      'Invalid Check Path! Please review AutoIt settings (Check Path in UI, autoit.checkPath in JSON)',
+    );
+    return false;
+  }
+  return true;
+};
+
 /**
  * Checks the AutoIt code in the given document and updates the diagnostic collection.
  * @param {TextDocument} document - The document to check.
@@ -65,15 +73,7 @@ const checkAutoItCode = async (document, diagnosticCollection) => {
   if (document.languageId !== 'autoit') return;
 
   const { checkPath } = config;
-  if (!existsSync(checkPath)) {
-    if (checkPath !== checkPathPrev)
-      window.showErrorMessage(
-        'Invalid Check Path! Please review AutoIt settings (Check Path in UI, autoit.checkPath in JSON)',
-      );
-
-    checkPathPrev = checkPath;
-    return;
-  }
+  if (!validateCheckPath(checkPath)) return;
 
   try {
     const consoleOutput = await runCheckProcess(document.fileName);
