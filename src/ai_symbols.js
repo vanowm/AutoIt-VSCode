@@ -79,117 +79,118 @@ const createRegionSymbol = (regionName, doc, docText) => {
   return newRegionSymbol;
 };
 
-export default languages.registerDocumentSymbolProvider(AUTOIT_MODE, {
-  provideDocumentSymbols(doc) {
-    const result = [];
-    const found = [];
-    const delims = ["'", '"', ';'];
-    let funcName;
-    let variableKind;
-    let inComment = false;
-    let inContinue = false;
+function provideDocumentSymbols(doc) {
+  const result = [];
+  const found = [];
+  const delims = ["'", '"', ';'];
+  let funcName;
+  let variableKind;
+  let inComment = false;
+  let inContinue = false;
 
-    // Get the number of lines in the document to loop through
-    const lineCount = Math.min(doc.lineCount, 10000);
-    for (let lineNum = 0; lineNum < lineCount; lineNum += 1) {
-      const line = doc.lineAt(lineNum);
-      const { text } = line;
-      const regionName = text.match(regionPattern);
-      let container;
+  // Get the number of lines in the document to loop through
+  const lineCount = Math.min(doc.lineCount, 10000);
+  for (let lineNum = 0; lineNum < lineCount; lineNum += 1) {
+    const line = doc.lineAt(lineNum);
+    const { text } = line;
+    const regionName = text.match(regionPattern);
+    let container;
 
-      if (isSkippableLine(line) && !regionName) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
+    if (isSkippableLine(line) && !regionName) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
 
-      if (/^\s*#(?:ce|comments-end)/.test(text)) {
-        inComment = false;
-        // eslint-disable-next-line no-continue
-        continue;
-      }
+    if (/^\s*#(?:ce|comments-end)/.test(text)) {
+      inComment = false;
+      // eslint-disable-next-line no-continue
+      continue;
+    }
 
-      if (/^\s*#(?:cs|comments-start)/.test(text)) {
-        inComment = true;
-      }
+    if (/^\s*#(?:cs|comments-start)/.test(text)) {
+      inComment = true;
+    }
 
-      if (inComment) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
+    if (inComment) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
 
-      funcName = functionPattern.exec(text);
-      if (funcName && !found.includes(funcName[0])) {
-        const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
+    funcName = functionPattern.exec(text);
+    if (funcName && !found.includes(funcName[0])) {
+      const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
 
-        if (functionSymbol) {
-          result.push(functionSymbol);
-          found.push(funcName[1]);
-        }
-      }
-
-      if (config.showVariablesInGoToSymbol) {
-        if (!inContinue) {
-          if (/^\s*?(Local|Global)?\sConst/.test(text)) {
-            variableKind = SymbolKind.Constant;
-          } else if (/^\s*?(Local|Global)?\sEnum/.test(text)) {
-            variableKind = SymbolKind.Enum;
-          } else {
-            variableKind = SymbolKind.Variable;
-          }
-        }
-
-        inContinue = /\s_\b\s*(;.*)?\s*/.test(text);
-
-        const variables = text.match(variablePattern);
-        if (variables) {
-          // eslint-disable-next-line no-loop-func
-          variables.forEach(variable => {
-            if (AI_CONSTANTS.includes(variable)) {
-              return;
-            }
-
-            // ignore strings beginning with preset delimiters
-            if (delims.includes(variable.charAt(0))) {
-              return;
-            }
-
-            // Go through symbols for function container and symbols that match name and container
-            container = result.find(testSymbol => {
-              return (
-                testSymbol.location.range.contains(line.range) &&
-                testSymbol.kind === SymbolKind.Function
-              );
-            });
-
-            if (container === undefined) {
-              container = '';
-            }
-
-            if (
-              result.some(testSymbol => {
-                return testSymbol.name === variable && testSymbol.containerName === container.name;
-              })
-            ) {
-              return;
-            }
-
-            result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
-            found.push(variable);
-          });
-        }
-      }
-
-      if (config.showRegionsInGoToSymbol) {
-        if (regionName && !found.includes(regionName[0])) {
-          const regionSymbol = createRegionSymbol(regionName[1], doc, doc.getText());
-          if (regionSymbol) {
-            result.push(regionSymbol);
-            found.push(regionName[0]);
-          }
-        }
+      if (functionSymbol) {
+        result.push(functionSymbol);
+        found.push(funcName[1]);
       }
     }
 
-    return result;
-  },
-});
+    if (config.showVariablesInGoToSymbol) {
+      if (!inContinue) {
+        if (/^\s*?(Local|Global)?\sConst/.test(text)) {
+          variableKind = SymbolKind.Constant;
+        } else if (/^\s*?(Local|Global)?\sEnum/.test(text)) {
+          variableKind = SymbolKind.Enum;
+        } else {
+          variableKind = SymbolKind.Variable;
+        }
+      }
+
+      inContinue = /\s_\b\s*(;.*)?\s*/.test(text);
+
+      const variables = text.match(variablePattern);
+      if (variables) {
+        // eslint-disable-next-line no-loop-func
+        variables.forEach(variable => {
+          if (AI_CONSTANTS.includes(variable)) {
+            return;
+          }
+
+          // ignore strings beginning with preset delimiters
+          if (delims.includes(variable.charAt(0))) {
+            return;
+          }
+
+          // Go through symbols for function container and symbols that match name and container
+          container = result.find(testSymbol => {
+            return (
+              testSymbol.location.range.contains(line.range) &&
+              testSymbol.kind === SymbolKind.Function
+            );
+          });
+
+          if (container === undefined) {
+            container = '';
+          }
+
+          if (
+            result.some(testSymbol => {
+              return testSymbol.name === variable && testSymbol.containerName === container.name;
+            })
+          ) {
+            return;
+          }
+
+          result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
+          found.push(variable);
+        });
+      }
+    }
+
+    if (config.showRegionsInGoToSymbol) {
+      if (regionName && !found.includes(regionName[0])) {
+        const regionSymbol = createRegionSymbol(regionName[1], doc, doc.getText());
+        if (regionSymbol) {
+          result.push(regionSymbol);
+          found.push(regionName[0]);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+export default languages.registerDocumentSymbolProvider(AUTOIT_MODE, { provideDocumentSymbols });
+export { provideDocumentSymbols };

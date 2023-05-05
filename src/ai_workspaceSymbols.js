@@ -1,81 +1,43 @@
-import { languages, SymbolInformation, SymbolKind, Location, Position, workspace } from 'vscode';
-import fs from 'fs';
-import { functionPattern, variablePattern, regionPattern } from './util';
+import { languages, workspace } from 'vscode';
 
-const config = workspace.getConfiguration('autoit');
+import { provideDocumentSymbols } from './ai_symbols';
 
-const makeSymbol = (name, type, filePath, docLine) => {
-  return new SymbolInformation(name, type, '', new Location(filePath, new Position(docLine, 0)));
-};
+let symbolsCache = [];
 
-async function provideWorkspaceSymbols(query) {
+async function getWorkspaceSymbols() {
   const symbols = [];
-  let search = query;
-
-  // Don't start searching when it's empty
-  if (!search) {
-    search = '.*';
-  }
-
-  // Enable searching for leading $
-  const searchFilter = new RegExp(search.replace('$', '\\$'), 'i');
-
-  // Get list of AutoIt files in workspace
   const data = await workspace.findFiles('**/*.{au3,a3x}');
-  data.forEach(file => {
-    const foundVars = [];
+  // const foundVars = new Set();
 
-    fs.readFileSync(file.fsPath)
-      .toString()
-      .split('\n')
-      .forEach((line, index) => {
-        let symbolKind;
-        const variableFound = variablePattern.exec(line);
-        const functionFound = functionPattern.exec(line);
-        const regionFound = regionPattern.exec(line);
+  await Promise.all(
+    data.map(async file => {
+      const thisDocument = await workspace.openTextDocument(file);
+      const fileSymbols = provideDocumentSymbols(thisDocument);
 
-        if (line.charAt(0) === ';') return false; // Skip commented lines
-
-        if (variableFound && config.showVariablesInGoToSymbol) {
-          const { 1: newName } = variableFound;
-
-          // Filter based on search (if it's not empty)
-          if (newName === undefined || !searchFilter.exec(newName)) {
-            return false;
-          }
-          symbolKind = SymbolKind.Variable;
-
-          if (foundVars.indexOf(newName) === -1) {
-            foundVars.push(newName);
-            return symbols.push(makeSymbol(newName, symbolKind, file, index));
-          }
-          return false;
-        }
-
-        if (functionFound) {
-          const { 1: newName } = functionFound;
-          if (!searchFilter.exec(newName)) {
-            return false;
-          }
-          symbolKind = SymbolKind.Function;
-          return symbols.push(makeSymbol(newName, symbolKind, file, index));
-        }
-
-        if (regionFound) {
-          const { 1: newName } = regionFound;
-          if (!searchFilter.exec(newName)) {
-            return false;
-          }
-          symbolKind = SymbolKind.Namespace;
-          return symbols.push(makeSymbol(newName, symbolKind, file, index));
-        }
-
-        return false;
-      });
-  });
+      symbols.push(...fileSymbols);
+    }),
+  );
 
   return symbols;
 }
+
+async function provideWorkspaceSymbols() {
+  if (symbolsCache.length === 0) {
+    symbolsCache = await getWorkspaceSymbols();
+  }
+  return symbolsCache;
+}
+
+const watcher = workspace.createFileSystemWatcher('**/*.{au3,a3x}');
+watcher.onDidChange(() => {
+  symbolsCache = [];
+});
+watcher.onDidCreate(() => {
+  symbolsCache = [];
+});
+watcher.onDidDelete(() => {
+  symbolsCache = [];
+});
 
 const workspaceSymbolProvider = languages.registerWorkspaceSymbolProvider({
   provideWorkspaceSymbols,
