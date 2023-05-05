@@ -1,7 +1,7 @@
 import { window, languages, workspace } from 'vscode';
 import { dirname } from 'path';
 import { existsSync } from 'fs';
-import { spawn } from 'child_process';
+import { execFile } from 'child_process';
 import languageConfiguration from './languageConfiguration';
 import hoverFeature from './ai_hover';
 import completionFeature from './ai_completion';
@@ -42,7 +42,7 @@ const checkAutoItCode = (document, diagnosticCollection) => {
     checkPathPrev = checkPath;
     return;
   }
-  const checkProcess = spawn(config.checkPath, [document.fileName], {
+  const checkProcess = execFile(config.checkPath, [document.fileName], {
     cwd: dirname(document.fileName),
   });
 
