@@ -20,69 +20,53 @@ export const getDiagnosticSeverity = severityString => {
  * @param {number} position - The position number.
  * @returns {Range} - The diagnostic range.
  */
-export const getDiagnosticRange = (line, position) => {
+export const createDiagnosticRange = (line, position) => {
   const diagnosticPosition = new Position(parseInt(line, 10) - 1, parseInt(position, 10) - 1);
 
   return new Range(diagnosticPosition, diagnosticPosition);
 };
 
 /**
- * Adds a new diagnostic to an object of diagnostics.
- * @param {Object} currentDiagnostics - The current diagnostics object.
+ * Adds a new diagnostic to a Map of diagnostics.
+ * @param {Map} diagnostics - The current diagnostics object.
  * @param {string} scriptPath - The path of the script that the diagnostic is for.
- * @param {Range} range - The range of the diagnostic.
- * @param {string} description - The description of the diagnostic.
- * @param {number} severity - The severity of the diagnostic.
- * @returns {Object} - The updated diagnostics object.
+ * @param {Diagnostic} diagnosticToAdd - The new diagnostics object to add.
  */
-export const updateDiagnostics = (currentDiagnostics, scriptPath, range, description, severity) => {
-  const diagnosticToAdd = new Diagnostic(range, description, severity);
-  const updatedDiagnostics = currentDiagnostics;
-
-  if (!(scriptPath in updatedDiagnostics)) {
-    updatedDiagnostics[scriptPath] = [];
-  }
-  updatedDiagnostics[scriptPath].push(diagnosticToAdd);
-
-  return updatedDiagnostics;
+export const updateDiagnostics = (diagnostics, scriptPath, diagnosticToAdd) => {
+  const diagnosticArray = diagnostics.get(scriptPath) || [];
+  diagnosticArray.push(diagnosticToAdd);
+  diagnostics.set(scriptPath, diagnosticArray);
 };
+
+const OUTPUT_REGEXP = /"(?<scriptPath>.+)"\((?<line>\d{1,4}),(?<position>\d{1,4})\)\s:\s(?<severity>warning|error):\s(?<description>.+)\r/gm;
 
 /**
  * Processes the results of AU3Check, identifies warnings and errors.
  * @param {string} output Text returned from AU3Check.
- * @param {vscode.DiagnosticCollection} collection - The diagnostic collection to update.
- * @param {vscode.Uri} docURI - The URI of the document that was checked
+ * @param {DiagnosticCollection} collection - The diagnostic collection to update.
+ * @param {Uri} documentURI - The URI of the document that was checked
  */
-export const parseAu3CheckOutput = (output, collection, docURI) => {
-  const OUTPUT_REGEXP = /"(?<scriptPath>.+)"\((?<line>\d{1,4}),(?<position>\d{1,4})\)\s:\s(?<severity>warning|error):\s(?<description>.+)\r/gm;
-  let matches = null;
-  let diagnosticRange;
-  let diagnosticSeverity;
-  let diagnostics = {};
-
+export const parseAu3CheckOutput = (output, collection, documentURI) => {
   if (output.includes('- 0 error(s), 0 warning(s)')) {
-    collection.delete(docURI);
+    collection.delete(documentURI);
     return;
   }
 
-  matches = OUTPUT_REGEXP.exec(output);
-  while (matches !== null) {
-    diagnosticRange = getDiagnosticRange(matches.groups.line, matches.groups.position);
-    diagnosticSeverity = getDiagnosticSeverity(matches.groups.severity);
+  const diagnostics = new Map();
 
-    diagnostics = updateDiagnostics(
-      diagnostics,
-      matches.groups.scriptPath,
-      diagnosticRange,
-      matches.groups.description,
-      diagnosticSeverity,
-    );
+  const matches = [...output.matchAll(OUTPUT_REGEXP)];
+  matches.forEach(match => {
+    const { line, position, severity, scriptPath, description } = match.groups;
+    const diagnosticRange = createDiagnosticRange(line, position);
+    const diagnosticSeverity = getDiagnosticSeverity(severity);
 
-    matches = OUTPUT_REGEXP.exec(output);
-  }
+    const diagnosticToAdd = new Diagnostic(diagnosticRange, description, diagnosticSeverity);
 
-  Object.keys(diagnostics).forEach(scriptPath => {
-    collection.set(Uri.file(scriptPath), diagnostics[scriptPath]);
+    updateDiagnostics(diagnostics, scriptPath, diagnosticToAdd);
+  });
+
+  diagnostics.forEach((diagnosticArray, scriptPath) => {
+    collection.set(Uri.file(scriptPath), diagnosticArray);
   });
 };
 
