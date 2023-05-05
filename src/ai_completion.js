@@ -14,10 +14,18 @@ import DEFAULT_UDFS from './constants';
 let currentIncludeFiles = [];
 let includes = [];
 const functionPattern = _functionPattern.setFlags('gim');
-const createNewCompletionItem = (kind, name, strDetail = 'Document Function') => {
+
+/**
+ * Creates a new completion item.
+ * @param {CompletionItemKind} kind - The kind of completion item.
+ * @param {string} name - The name of the completion item.
+ * @param {string} [itemDetail='Document Function'] - The detail of the completion item.
+ * @returns {CompletionItem} The new completion item.
+ */
+const createNewCompletionItem = (kind, name, itemDetail = 'Document Function') => {
   const compItem = new CompletionItem(name, kind);
 
-  compItem.detail = kind === CompletionItemKind.Variable ? 'Variable' : strDetail;
+  compItem.detail = kind === CompletionItemKind.Variable ? 'Variable' : itemDetail;
 
   if (kind === CompletionItemKind.Function) {
     compItem.commitCharacters = ['('];
