@@ -107,13 +107,68 @@ const parseRegionFromText = params => {
   found.add(regionName[0]);
 };
 
+const parseVariablesFromtext = params => {
+  const delims = ["'", '"', ';'];
+  const { text, result, line, found, doc } = params;
+  let { inContinuation, variableKind } = params;
+
+  if (!config.showVariablesInGoToSymbol) return;
+
+  if (!inContinuation) {
+    if (/^\s*?(Local|Global)?\sConst/.test(text)) {
+      variableKind = SymbolKind.Constant;
+    } else if (/^\s*?(Local|Global)?\sEnum/.test(text)) {
+      variableKind = SymbolKind.Enum;
+    } else {
+      variableKind = SymbolKind.Variable;
+    }
+  }
+
+  inContinuation = continuationRegex.test(text);
+
+  const variables = text.match(variablePattern);
+  if (!variables) return;
+
+  variables.forEach(variable => {
+    if (AI_CONSTANTS.includes(variable)) {
+      return;
+    }
+
+    // ignore strings beginning with preset delimiters
+    if (delims.includes(variable.charAt(0))) {
+      return;
+    }
+
+    // Go through symbols for function container and symbols that match name and container
+    let container = result.find(testSymbol => {
+      return (
+        testSymbol.location.range.contains(line.range) && testSymbol.kind === SymbolKind.Function
+      );
+    });
+
+    if (container === undefined) {
+      container = '';
+    }
+
+    if (
+      result.some(testSymbol => {
+        return testSymbol.name === variable && testSymbol.containerName === container.name;
+      })
+    ) {
+      return;
+    }
+
+    result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
+    found.add(variable);
+  });
+};
+
 function provideDocumentSymbols(doc) {
   const result = [];
   const found = new Set();
-  const delims = ["'", '"', ';'];
-  let variableKind;
   let inComment = false;
   let inContinuation = false;
+  let variableKind;
 
   // Get the number of lines in the document to loop through
   const lineCount = Math.min(doc.lineCount, 10000);
@@ -121,7 +176,6 @@ function provideDocumentSymbols(doc) {
     const line = doc.lineAt(lineNum);
     const { text } = line;
     const regionName = text.match(regionPattern);
-    let container;
 
     if (isSkippableLine(line) && !regionName) {
       // eslint-disable-next-line no-continue
@@ -145,57 +199,7 @@ function provideDocumentSymbols(doc) {
 
     parseFunctionFromText({ text, found, doc, lineNum, result });
 
-    if (config.showVariablesInGoToSymbol) {
-      if (!inContinuation) {
-        if (/^\s*?(Local|Global)?\sConst/.test(text)) {
-          variableKind = SymbolKind.Constant;
-        } else if (/^\s*?(Local|Global)?\sEnum/.test(text)) {
-          variableKind = SymbolKind.Enum;
-        } else {
-          variableKind = SymbolKind.Variable;
-        }
-      }
-
-      inContinuation = continuationRegex.test(text);
-
-      const variables = text.match(variablePattern);
-      if (variables) {
-        // eslint-disable-next-line no-loop-func
-        variables.forEach(variable => {
-          if (AI_CONSTANTS.includes(variable)) {
-            return;
-          }
-
-          // ignore strings beginning with preset delimiters
-          if (delims.includes(variable.charAt(0))) {
-            return;
-          }
-
-          // Go through symbols for function container and symbols that match name and container
-          container = result.find(testSymbol => {
-            return (
-              testSymbol.location.range.contains(line.range) &&
-              testSymbol.kind === SymbolKind.Function
-            );
-          });
-
-          if (container === undefined) {
-            container = '';
-          }
-
-          if (
-            result.some(testSymbol => {
-              return testSymbol.name === variable && testSymbol.containerName === container.name;
-            })
-          ) {
-            return;
-          }
-
-          result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
-          found.add(variable);
-        });
-      }
-    }
+    parseVariablesFromtext({ inContinuation, text, found, doc, result, line, variableKind });
 
     parseRegionFromText({ regionName, found, doc, result });
   }
