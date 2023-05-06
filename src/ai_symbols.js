@@ -9,6 +9,9 @@ import {
 } from './util';
 
 const config = workspace.getConfiguration('autoit');
+const commentEndRegex = /^\s*#(?:ce|comments-end)/;
+const commentStartRegex = /^\s*#(?:cs|comments-start)/;
+const continuationRegex = /\s_\b\s*(;.*)?\s*/;
 
 const createVariableSymbol = (variable, variableKind, doc, line, container) => {
   return new SymbolInformation(
@@ -86,7 +89,7 @@ function provideDocumentSymbols(doc) {
   let funcName;
   let variableKind;
   let inComment = false;
-  let inContinue = false;
+  let inContinuation = false;
 
   // Get the number of lines in the document to loop through
   const lineCount = Math.min(doc.lineCount, 10000);
@@ -101,13 +104,13 @@ function provideDocumentSymbols(doc) {
       continue;
     }
 
-    if (/^\s*#(?:ce|comments-end)/.test(text)) {
+    if (commentEndRegex.test(text)) {
       inComment = false;
       // eslint-disable-next-line no-continue
       continue;
     }
 
-    if (/^\s*#(?:cs|comments-start)/.test(text)) {
+    if (commentStartRegex.test(text)) {
       inComment = true;
     }
 
@@ -127,7 +130,7 @@ function provideDocumentSymbols(doc) {
     }
 
     if (config.showVariablesInGoToSymbol) {
-      if (!inContinue) {
+      if (!inContinuation) {
         if (/^\s*?(Local|Global)?\sConst/.test(text)) {
           variableKind = SymbolKind.Constant;
         } else if (/^\s*?(Local|Global)?\sEnum/.test(text)) {
@@ -137,7 +140,7 @@ function provideDocumentSymbols(doc) {
         }
       }
 
-      inContinue = /\s_\b\s*(;.*)?\s*/.test(text);
+      inContinuation = continuationRegex.test(text);
 
       const variables = text.match(variablePattern);
       if (variables) {
