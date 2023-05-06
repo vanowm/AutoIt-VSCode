@@ -82,19 +82,29 @@ const createRegionSymbol = (regionName, doc, docText) => {
   return newRegionSymbol;
 };
 
-const parseFunctionFromText = ({ text, found, doc, lineNum, result }) => {
+const parseFunctionFromText = params => {
+  const { text, found, doc, lineNum, result } = params;
+
   const funcName = text.match(functionPattern);
-  if (!funcName || found.has(funcName[0])) {
-    return;
-  }
+  if (!funcName || found.has(funcName[0])) return;
 
   const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
-  if (!functionSymbol) {
-    return;
-  }
+  if (!functionSymbol) return;
 
   result.push(functionSymbol);
   found.add(funcName[1]);
+};
+
+const parseRegionFromText = params => {
+  if (!config.showRegionsInGoToSymbol) return;
+
+  const { regionName, found, doc, result } = params;
+  if (!regionName || found.has(regionName[0])) return;
+
+  const regionSymbol = createRegionSymbol(regionName[1], doc, doc.getText());
+  if (!regionSymbol) return;
+  result.push(regionSymbol);
+  found.add(regionName[0]);
 };
 
 function provideDocumentSymbols(doc) {
@@ -187,15 +197,7 @@ function provideDocumentSymbols(doc) {
       }
     }
 
-    if (config.showRegionsInGoToSymbol) {
-      if (regionName && !found.has(regionName[0])) {
-        const regionSymbol = createRegionSymbol(regionName[1], doc, doc.getText());
-        if (regionSymbol) {
-          result.push(regionSymbol);
-          found.add(regionName[0]);
-        }
-      }
-    }
+    parseRegionFromText({ regionName, found, doc, result });
   }
 
   return result;
