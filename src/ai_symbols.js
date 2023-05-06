@@ -82,11 +82,25 @@ const createRegionSymbol = (regionName, doc, docText) => {
   return newRegionSymbol;
 };
 
+const parseFunctionFromText = ({ text, found, doc, lineNum, result }) => {
+  const funcName = text.match(functionPattern);
+  if (!funcName || found.has(funcName[0])) {
+    return;
+  }
+
+  const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
+  if (!functionSymbol) {
+    return;
+  }
+
+  result.push(functionSymbol);
+  found.add(funcName[1]);
+};
+
 function provideDocumentSymbols(doc) {
   const result = [];
-  const found = [];
+  const found = new Set();
   const delims = ["'", '"', ';'];
-  let funcName;
   let variableKind;
   let inComment = false;
   let inContinuation = false;
@@ -119,15 +133,7 @@ function provideDocumentSymbols(doc) {
       continue;
     }
 
-    funcName = functionPattern.exec(text);
-    if (funcName && !found.includes(funcName[0])) {
-      const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
-
-      if (functionSymbol) {
-        result.push(functionSymbol);
-        found.push(funcName[1]);
-      }
-    }
+    parseFunctionFromText({ text, found, doc, lineNum, result });
 
     if (config.showVariablesInGoToSymbol) {
       if (!inContinuation) {
@@ -176,17 +182,17 @@ function provideDocumentSymbols(doc) {
           }
 
           result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
-          found.push(variable);
+          found.add(variable);
         });
       }
     }
 
     if (config.showRegionsInGoToSymbol) {
-      if (regionName && !found.includes(regionName[0])) {
+      if (regionName && !found.has(regionName[0])) {
         const regionSymbol = createRegionSymbol(regionName[1], doc, doc.getText());
         if (regionSymbol) {
           result.push(regionSymbol);
-          found.push(regionName[0]);
+          found.add(regionName[0]);
         }
       }
     }
