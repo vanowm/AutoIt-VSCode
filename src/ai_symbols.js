@@ -107,17 +107,29 @@ const parseRegionFromText = params => {
   found.add(regionName[0]);
 };
 
-const parseVariablesFromtext = params => {
-  const delims = ["'", '"', ';'];
+const variableConstantRegex = /^\s*?(Local|Global)?\sConst/;
+const variableEnumRegex = /^\s*?(Local|Global)?\sEnum/;
+const delims = ["'", '"', ';'];
+
+function findVariableContainer(result, line) {
+  return (
+    result.find(
+      testSymbol =>
+        testSymbol.location.range.contains(line.range) && testSymbol.kind === SymbolKind.Function,
+    ) || ''
+  );
+}
+
+function parseVariablesFromtext(params) {
   const { text, result, line, found, doc } = params;
   let { inContinuation, variableKind } = params;
 
   if (!config.showVariablesInGoToSymbol) return;
 
   if (!inContinuation) {
-    if (/^\s*?(Local|Global)?\sConst/.test(text)) {
+    if (variableConstantRegex.test(text)) {
       variableKind = SymbolKind.Constant;
-    } else if (/^\s*?(Local|Global)?\sEnum/.test(text)) {
+    } else if (variableEnumRegex.test(text)) {
       variableKind = SymbolKind.Enum;
     } else {
       variableKind = SymbolKind.Variable;
@@ -129,45 +141,28 @@ const parseVariablesFromtext = params => {
   const variables = text.match(variablePattern);
   if (!variables) return;
 
-  variables.forEach(variable => {
-    if (AI_CONSTANTS.includes(variable)) {
-      return;
+  for (let i = 0; i < variables.length; i += 1) {
+    const variable = variables[i];
+    if (!AI_CONSTANTS.includes(variable) && !delims.includes(variable.charAt(0))) {
+      const container = findVariableContainer(result, line);
+
+      if (
+        !result.some(
+          testSymbol => testSymbol.name === variable && testSymbol.containerName === container.name,
+        )
+      ) {
+        result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
+        found.add(variable);
+      }
     }
-
-    // ignore strings beginning with preset delimiters
-    if (delims.includes(variable.charAt(0))) {
-      return;
-    }
-
-    // Go through symbols for function container and symbols that match name and container
-    let container = result.find(testSymbol => {
-      return (
-        testSymbol.location.range.contains(line.range) && testSymbol.kind === SymbolKind.Function
-      );
-    });
-
-    if (container === undefined) {
-      container = '';
-    }
-
-    if (
-      result.some(testSymbol => {
-        return testSymbol.name === variable && testSymbol.containerName === container.name;
-      })
-    ) {
-      return;
-    }
-
-    result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
-    found.add(variable);
-  });
-};
+  }
+}
 
 function provideDocumentSymbols(doc) {
   const result = [];
   const found = new Set();
   let inComment = false;
-  let inContinuation = false;
+  const inContinuation = false;
   let variableKind;
 
   // Get the number of lines in the document to loop through
