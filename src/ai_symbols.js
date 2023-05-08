@@ -83,16 +83,16 @@ const createRegionSymbol = (regionName, doc, docText) => {
 };
 
 const parseFunctionFromText = params => {
-  const { text, found, doc, lineNum, result } = params;
+  const { text, processedSymbols, doc, lineNum, result } = params;
 
   const funcName = text.match(functionPattern);
-  if (!funcName || found.has(funcName[0])) return;
+  if (!funcName || processedSymbols.has(funcName[0])) return;
 
   const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
   if (!functionSymbol) return;
 
   result.push(functionSymbol);
-  found.add(funcName[1]);
+  processedSymbols.add(funcName[1]);
 };
 
 const parseRegionFromText = params => {
@@ -120,6 +120,20 @@ function findVariableContainer(result, line) {
   );
 }
 
+/**
+ * Check whether a variable with the specified name and container is present in the given array of symbols.
+ *
+ * @param {Array} result - The array of symbols to search for the variable.
+ * @param {string} variable - The name of the variable to search for.
+ * @param {Object} container - The container object that the variable is expected to be found in.
+ * @returns {boolean} `true` if the variable is found in the symbols array, `false` otherwise.
+ */
+const isVariableInResults = (result, variable, container) => {
+  return !!result.find(
+    symbol => symbol.name === variable && symbol.containerName === container.name,
+  );
+};
+
 function parseVariablesFromtext(params) {
   const { text, result, line, found, doc } = params;
   let { inContinuation, variableKind } = params;
@@ -146,11 +160,7 @@ function parseVariablesFromtext(params) {
     if (!AI_CONSTANTS.includes(variable) && !delims.includes(variable.charAt(0))) {
       const container = findVariableContainer(result, line);
 
-      if (
-        !result.some(
-          testSymbol => testSymbol.name === variable && testSymbol.containerName === container.name,
-        )
-      ) {
+      if (!isVariableInResults(result, variable, container)) {
         result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
         found.add(variable);
       }
@@ -160,12 +170,11 @@ function parseVariablesFromtext(params) {
 
 function provideDocumentSymbols(doc) {
   const result = [];
-  const found = new Set();
+  const processedSymbols = new Set();
   let inComment = false;
   const inContinuation = false;
   let variableKind;
 
-  // Get the number of lines in the document to loop through
   const lineCount = Math.min(doc.lineCount, 10000);
   for (let lineNum = 0; lineNum < lineCount; lineNum += 1) {
     const line = doc.lineAt(lineNum);
@@ -192,11 +201,19 @@ function provideDocumentSymbols(doc) {
       continue;
     }
 
-    parseFunctionFromText({ text, found, doc, lineNum, result });
+    parseFunctionFromText({ text, processedSymbols, doc, lineNum, result });
 
-    parseVariablesFromtext({ inContinuation, text, found, doc, result, line, variableKind });
+    parseVariablesFromtext({
+      inContinuation,
+      text,
+      found: processedSymbols,
+      doc,
+      result,
+      line,
+      variableKind,
+    });
 
-    parseRegionFromText({ regionName, found, doc, result });
+    parseRegionFromText({ regionName, found: processedSymbols, doc, result });
   }
 
   return result;
