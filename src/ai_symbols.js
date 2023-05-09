@@ -138,10 +138,10 @@ function parseVariablesFromtext(params) {
   const { text, result, line, found, doc } = params;
   let { inContinuation, variableKind } = params;
 
-  if (!config.showVariablesInGoToSymbol) return;
+  if (!config.showVariablesInGoToSymbol) return { inContinuation, variableKind };
 
   const variables = text.match(variablePattern);
-  if (!variables) return;
+  if (!variables) return { inContinuation, variableKind };
 
   if (!inContinuation) {
     if (variableConstantRegex.test(text)) {
@@ -155,8 +155,6 @@ function parseVariablesFromtext(params) {
 
   inContinuation = continuationRegex.test(text);
 
-
-
   for (let i = 0; i < variables.length; i += 1) {
     const variable = variables[i];
     if (!AI_CONSTANTS.includes(variable) && !delims.includes(variable.charAt(0))) {
@@ -168,13 +166,15 @@ function parseVariablesFromtext(params) {
       }
     }
   }
+
+  return { inContinuation, variableKind };
 }
 
 function provideDocumentSymbols(doc) {
   const result = [];
   const processedSymbols = new Set();
   let inComment = false;
-  const inContinuation = false;
+  let inContinuation = false;
   let variableKind;
 
   const lineCount = Math.min(doc.lineCount, 10000);
@@ -205,7 +205,7 @@ function provideDocumentSymbols(doc) {
 
     parseFunctionFromText({ text, processedSymbols, doc, lineNum, result });
 
-    parseVariablesFromtext({
+    ({ inContinuation, variableKind } = parseVariablesFromtext({
       inContinuation,
       text,
       found: processedSymbols,
@@ -213,7 +213,7 @@ function provideDocumentSymbols(doc) {
       result,
       line,
       variableKind,
-    });
+    }));
 
     parseRegionFromText({ regionName, found: processedSymbols, doc, result });
   }
