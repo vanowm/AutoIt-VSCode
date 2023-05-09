@@ -140,6 +140,9 @@ function parseVariablesFromtext(params) {
 
   if (!config.showVariablesInGoToSymbol) return;
 
+  const variables = text.match(variablePattern);
+  if (!variables) return;
+
   if (!inContinuation) {
     if (variableConstantRegex.test(text)) {
       variableKind = SymbolKind.Constant;
@@ -152,8 +155,7 @@ function parseVariablesFromtext(params) {
 
   inContinuation = continuationRegex.test(text);
 
-  const variables = text.match(variablePattern);
-  if (!variables) return;
+
 
   for (let i = 0; i < variables.length; i += 1) {
     const variable = variables[i];
