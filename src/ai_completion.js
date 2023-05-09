@@ -146,9 +146,7 @@ const provideCompletionItems = (document, position) => {
   // Remove completion offerings from commented lines
   const line = document.lineAt(position.line);
   const firstChar = line.text.charAt(line.firstNonWhitespaceCharacterIndex);
-  if (firstChar === ';') {
-    return null;
-  }
+  if (firstChar === ';' || _functionPattern.test(line.text)) return null;
 
   const variableCompletions = getVariableCompletions(text, prefix);
   const functionCompletions = getLocalFunctionCompletions(text);
