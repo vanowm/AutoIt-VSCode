@@ -229,6 +229,23 @@ function noEvents(value) {
   _noEvents = value;
 }
 
+const config = new Proxy(conf, {
+  get(target, prop) {
+    const val = target.defaultPaths[prop];
+    if (val) {
+      const isArray = Array.isArray(val);
+      if (isArray || (val !== null && typeof val === 'object'))
+        return isArray ? val.map(a => a.fullPath) : val.fullPath;
+
+      return val.fullPath;
+    }
+    return target.data[prop];
+  },
+  set(target, prop, val) {
+    return target.data.update(prop, val);
+  },
+});
+
 /**
  * Checks a filename with the include paths for a valid path
  * @param {string} file - the filename to append to the paths
@@ -258,28 +275,10 @@ const findFilepath = (file, library = true) => {
   return false;
 };
 
-
-const config = new Proxy(conf, {
-  get(target, prop) {
-    const val = target.defaultPaths[prop];
-    if (val) {
-      const isArray = Array.isArray(val);
-      if (isArray || (val !== null && typeof val === 'object'))
-        return isArray ? val.map(a => a.fullPath) : val.fullPath;
-
-      return val.fullPath;
-    }
-    return target.data[prop];
-  },
-  set(target, prop, val) {
-    return target.data.update(prop, val);
-  },
-});
-
 export default {
   config,
   addListener,
   removeListener,
   noEvents,
-  findFilepath
+  findFilepath,
 };
