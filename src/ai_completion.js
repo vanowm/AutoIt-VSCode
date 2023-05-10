@@ -1,4 +1,4 @@
-import { languages, CompletionItem, CompletionItemKind, Range } from 'vscode';
+import { languages, CompletionItem, CompletionItemKind, Range, workspace } from 'vscode';
 import completions from './completions';
 import {
   includePattern,
@@ -14,6 +14,12 @@ import DEFAULT_UDFS from './constants';
 let currentIncludeFiles = [];
 let includes = [];
 const functionPattern = _functionPattern.setFlags('gim');
+let parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTriggerForFunctions');
+
+workspace.onDidChangeConfiguration(event => {
+  if (event.affectsConfiguration('autoit.enableParenTriggerForFunctions'))
+    parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTriggerForFunctions');
+});
 
 /**
  * Creates a new completion item.
@@ -27,7 +33,7 @@ const createNewCompletionItem = (kind, name, itemDetail = 'Document Function') =
 
   compItem.detail = kind === CompletionItemKind.Variable ? 'Variable' : itemDetail;
 
-  if (kind === CompletionItemKind.Function) {
+  if (kind === CompletionItemKind.Function && parenTriggerOn) {
     compItem.commitCharacters = ['('];
   }
 
@@ -48,18 +54,18 @@ const arraysMatch = (arr1, arr2) => {
  * @returns {CompletionItem[]} Array of completionItem objects
  */
 const getLibraryFunctions = (libraryIncludes, doc) => {
-  const items = [];
-  libraryIncludes.forEach(file => {
-    const fullPath = findFilepath(file);
-    if (fullPath)
-      Object.keys(getIncludeData(fullPath, doc)).forEach(newFunc => {
-        items.push(
-          createNewCompletionItem(CompletionItemKind.Function, newFunc, `Function from ${file}`),
-        );
-      });
-  });
-
-  return items;
+  return libraryIncludes
+    .flatMap(file => {
+      const fullPath = findFilepath(file);
+      return fullPath
+        ? Object.keys(getIncludeData(fullPath, doc)).map(newFunc => {
+            return { file, newFunc };
+          })
+        : [];
+    })
+    .map(({ file, newFunc }) => {
+      return createNewCompletionItem(CompletionItemKind.Function, newFunc, `Function from ${file}`);
+    });
 };
 
 /**

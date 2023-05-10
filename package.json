@@ -484,6 +484,11 @@
           "type": "number",
           "default": 5000,
           "description": "Number of output lines to keep"
+        },
+        "autoit.enableParenTriggerForFunctions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Adds the ability to use '(' to select a function completion suggestion, which will add the function with open and closed parens, place the cursor between them and trigger signature help."
         }
       }
     },

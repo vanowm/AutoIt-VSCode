@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Signature help pulls description and parameters from function headers
+- Option to disable `(` as an option to accept function completion suggestions
 
 ### Changed
 
@@ -22,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Open include shortcut not working for library UDFs
 - Open include shortcut not working for paths with `#` in them
 - Function autocomplete from include files
+- Reduced completion suggestions when writing function definitions
 
 ### Contributors
 
