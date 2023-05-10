@@ -20,7 +20,7 @@ const aiOutCommon = window.createOutputChannel('AutoIt (global)', 'vscode-autoit
  *
  * @returns {string} The file name of the active document, or an empty string if it's not available.
  */
-function getActiveDocumentFile() {
+function getActiveDocumentFileName() {
   if (!window.activeTextEditor) {
     return '';
   }
@@ -47,7 +47,7 @@ const runners = {
   },
 
   get lastRunningOpened() {
-    return this.findRunner({ status: true, thisFile: getActiveDocumentFile() });
+    return this.findRunner({ status: true, thisFile: getActiveDocumentFileName() });
   },
 
   /**
@@ -545,7 +545,7 @@ const AiOut = ({ id, aiOutProcess }) => {
 let hhproc;
 
 function procRunner(cmdPath, args = [], bAiOutReuse = true) {
-  const thisFile = getActiveDocumentFile(),
+  const thisFile = getActiveDocumentFileName(),
     processCommand = cmdPath + " " + args,
     runnerPrev = bAiOutReuse && runners.findRunner({ status: false, thisFile, processCommand }),
     id = runnerPrev ? runnerPrev.info.id : ++runners.id,
@@ -652,7 +652,7 @@ workspace.onDidCloseTextDocument(doc => {
 
 const runScript = () => {
   const thisDoc = window.activeTextEditor.document; // Get the object of the text editor
-  const thisFile = getActiveDocumentFile(); // Get the current file name
+  const thisFile = getActiveDocumentFileName();
   if (!keybindings[commandsPrefix + "killScript"] && !keybindings[commandsPrefix + "killScriptOpened"]) {
     messages.error.killScript = showErrorMessage(`Please set "AutoIt: Kill Running Script" keyboard shortcut.`, { timeout: 30000 });
     return messages.error.killScript;
@@ -822,8 +822,7 @@ const debugMsgBox = () => {
 
 const compileScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile(); // Get the current file name
-
+  const thisFile = getActiveDocumentFileName();
   // Save the file
   thisDoc.save().then(() => {
     if (thisDoc.isUntitled)
@@ -843,7 +842,7 @@ const compileScript = () => {
 
 const tidyScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile(); // Get the current file name
+  const thisFile = getActiveDocumentFileName();
 
   // Save the file
   thisDoc.save().then(() => {
@@ -861,7 +860,7 @@ const tidyScript = () => {
 
 const checkScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile();// Get the current file name
+  const thisFile = getActiveDocumentFileName();
 
   // Save the file
   thisDoc.save().then(() => {
@@ -879,7 +878,7 @@ const checkScript = () => {
 
 const buildScript = () => {
   const thisDoc = window.activeTextEditor.document;
-  const thisFile = getActiveDocumentFile(); // Get the current file name
+  const thisFile = getActiveDocumentFileName();
 
   // Save the file
   thisDoc.save().then(() => {
@@ -966,7 +965,7 @@ const killScript = (thisFile = null) => {
 };
 
 const killScriptOpened = () => {
-  killScript(getActiveDocumentFile());
+  killScript(getActiveDocumentFileName());
 };
 
 const openInclude = () => {
