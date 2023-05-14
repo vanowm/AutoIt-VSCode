@@ -89,7 +89,8 @@ import WinAPIShellEx from './udf_WinAPIShellEx';
 import WinAPIShPath from './udf_WinAPIShPath';
 import WinAPISys from './udf_winAPISys';
 import WinAPITheme from './udf_WinAPITheme';
-import WinNet from './udf_winNet';
+// import WinNet from './udf_winNet';
+import { completions as WinNet } from '../signatures/udf_winnet';
 import { completions as Word } from '../signatures/udf_word';
 import InetConstants from './constantsInet';
 
