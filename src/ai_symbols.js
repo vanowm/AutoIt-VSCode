@@ -107,10 +107,14 @@ const parseRegionFromText = params => {
   found.add(regionName[0]);
 };
 
-const variableConstantRegex = /^\s*?(Local|Global)?\sConst/;
-const variableEnumRegex = /^\s*?(Local|Global)?\sEnum/;
 const delims = ["'", '"', ';'];
 
+/**
+ * Finds the variable container for a given line.
+ * @param {Array} result - An array of symbols to search through.
+ * @param {Object} line - The line to find the variable container for.
+ * @returns {Object|string} The variable container or an empty string if not found.
+ */
 function findVariableContainer(result, line) {
   return (
     result.find(
@@ -134,6 +138,32 @@ const isVariableInResults = (result, variable, container) => {
   );
 };
 
+const variableRegex = /^\s*?(Local|Global)?\s(Const|Enum)/;
+
+/**
+ * Determines the kind of variable based on the text and inContinuation flag.
+ * @param {string} text - The text to be matched against the variableRegex.
+ * @param {boolean} inContinuation - A flag indicating whether the variable is in continuation.
+ * @param {SymbolKind} variableKind - The kind of variable to be returned if inContinuation is true.
+ * @returns {SymbolKind} The kind of variable determined by the function.
+ */
+function getVariableKind(text, inContinuation, variableKind) {
+  if (inContinuation) {
+    return variableKind;
+  }
+
+  const [, , kind] = text.match(variableRegex) || [];
+
+  switch (kind) {
+    case 'Const':
+      return SymbolKind.Constant;
+    case 'Enum':
+      return SymbolKind.Enum;
+    default:
+      return SymbolKind.Variable;
+  }
+}
+
 function parseVariablesFromtext(params) {
   const { text, result, line, found, doc } = params;
   let { inContinuation, variableKind } = params;
@@ -143,15 +173,7 @@ function parseVariablesFromtext(params) {
   const variables = text.match(variablePattern);
   if (!variables) return { inContinuation, variableKind };
 
-  if (!inContinuation) {
-    if (variableConstantRegex.test(text)) {
-      variableKind = SymbolKind.Constant;
-    } else if (variableEnumRegex.test(text)) {
-      variableKind = SymbolKind.Enum;
-    } else {
-      variableKind = SymbolKind.Variable;
-    }
-  }
+  variableKind = getVariableKind(text, inContinuation, variableKind);
 
   inContinuation = continuationRegex.test(text);
 
