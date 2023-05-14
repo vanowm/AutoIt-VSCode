@@ -50,7 +50,7 @@ By default, this extension is set up for the default installation of AutoIt and 
 | `autoit.outputCodePage`             | If you see incorrect text encoding in the output, set this option to match your system code page                                                                                                        | ""                                              |
 | `autoit.outputShowTime`             | Show time when each output line was received                                                                                                                                                            | "None"                                          |
 | `autoit.outputMaxHistoryLines`      | Number of output lines to keep                                                                                                                                                                          | 5000                                            |
-| `autoit.enableParenTriggerForFunctions` | Adds the ability to use `(` to select a function completion suggestion, which will add the function with open and closed parens, place the cursor between them and trigger signature help. | `true` |
+| `autoit.enableParenTriggerForFunctions` | Adds the ability to use `(` to select a function completion suggestion, which will add the function with open and closed parens, place the cursor between them and trigger signature help. Requires window reload to take full effect. | `true` |
 
 <!-- * Access the command palette `Ctrl+Shift+P`, type Preferences: Open User Settings or Preferences: Open Workspace Settings. -->
 

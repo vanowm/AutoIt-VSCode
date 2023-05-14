@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { CompletionItemKind, MarkdownString } = require('vscode');
+const { CompletionItemKind, MarkdownString, workspace } = require('vscode');
 const { findFilepath } = require('./ai_config').default;
 
 const descriptionHeader = '|Description |Value |\n|:---|:---:|\n';
@@ -80,6 +80,8 @@ const getIncludePath = (fileOrPath, document) => {
   return includePath;
 };
 
+const parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTriggerForFunctions');
+
 /**
  * Generates a new array of Completions that include a common kind, detail and
  * potentially commitCharacter(s)
@@ -90,16 +92,13 @@ const getIncludePath = (fileOrPath, document) => {
  * @returns Returns an array of Completion objects
  */
 const fillCompletions = (entries, kind, detail = '', requiredScript = '') => {
-  let commitCharacters;
-  let newDoc;
-  let newDetail;
+  const commitCharacters = kind === CompletionItemKind.Function && parenTriggerOn ? ['('] : [];
 
   const filledCompletion = entries.map(entry => {
-    commitCharacters = kind === CompletionItemKind.Function ? ['('] : [];
-    newDoc = new MarkdownString(entry.documentation);
+    const newDoc = new MarkdownString(entry.documentation);
     if (requiredScript) newDoc.appendCodeblock(`#include <${requiredScript}>`, 'autoit');
 
-    newDetail = entry.detail ? entry.detail + detail : detail;
+    const newDetail = entry.detail ? entry.detail + detail : detail;
 
     return {
       ...entry,

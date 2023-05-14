@@ -488,7 +488,7 @@
         "autoit.enableParenTriggerForFunctions": {
           "type": "boolean",
           "default": true,
-          "description": "Adds the ability to use '(' to select a function completion suggestion, which will add the function with open and closed parens, place the cursor between them and trigger signature help."
+          "description": "Adds the ability to use '(' to select a function completion suggestion, which will add the function with open and closed parens, place the cursor between them and trigger signature help. Requires window reload to take full effect."
         }
       }
     },
