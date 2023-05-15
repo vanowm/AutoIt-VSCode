@@ -10,7 +10,8 @@ const trueFalseHeader = `\n|&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;
 const opt = '**[optional]**';
 const br = '\u0020\u0020';
 const defaultZero = `${br + br}\`Default = 0\``;
-RegExp.prototype.setFlags = function(flags) {
+// eslint-disable-next-line no-extend-native
+RegExp.prototype.setFlags = function setFlags(flags) {
   return RegExp(this.source, flags);
 };
 
