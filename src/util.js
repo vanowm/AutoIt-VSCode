@@ -80,7 +80,12 @@ const getIncludePath = (fileOrPath, document) => {
   return includePath;
 };
 
-const parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTriggerForFunctions');
+let parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTriggerForFunctions');
+
+workspace.onDidChangeConfiguration(event => {
+  if (event.affectsConfiguration('autoit.enableParenTriggerForFunctions'))
+    parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTriggerForFunctions');
+});
 
 /**
  * Generates a new array of Completions that include a common kind, detail and
@@ -92,7 +97,6 @@ const parenTriggerOn = workspace.getConfiguration('autoit').get('enableParenTrig
  * @returns Returns an array of Completion objects
  */
 const fillCompletions = (entries, kind, detail = '', requiredScript = '') => {
-  const commitCharacters = kind === CompletionItemKind.Function && parenTriggerOn ? ['('] : [];
 
   const filledCompletion = entries.map(entry => {
     const newDoc = new MarkdownString(entry.documentation);
@@ -104,7 +108,9 @@ const fillCompletions = (entries, kind, detail = '', requiredScript = '') => {
       ...entry,
       kind,
       detail: newDetail,
-      commitCharacters,
+      get commitCharacters() {
+        return kind === CompletionItemKind.Function && parenTriggerOn ? ['('] : [];
+      },
       documentation: newDoc,
     };
   });
