@@ -222,24 +222,22 @@ const getIncludeScripts = (document, docText, scriptsToSearch) => {
  * @param {string} text - The text from the document
  * @returns {Object} An object with each parameter as a key and an object with label and documentation properties as its value.
  */
-const getParams = (paramText, functionName, text) => {
+const getParams = (paramText, text) => {
   const params = {};
 
-  if (!paramText) {
-    return params;
-  }
+  if (!paramText) return params;
 
-  paramText.split(',').forEach(param => {
-    let paramEntry = param.split('=')[0].trim();
-    if (paramEntry.startsWith('ByRef')) paramEntry = paramEntry.slice(6);
+  const paramList = paramText.split(',');
+  for (const param of paramList) {
+    const paramEntry = param
+      .split('=')[0]
+      .trim()
+      .replace(/^ByRef\s*/, '');
 
     const parameterDocRegex = new RegExp(
       `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s(?<documentation>.+)`,
     );
 
-    //   new RegExp(
-    //   `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s*(?<documentation>.+?);`,
-    // );
     const paramDocMatch = text.match(parameterDocRegex);
     const paramDoc = paramDocMatch ? paramDocMatch.groups.documentation : '';
 
@@ -247,7 +245,7 @@ const getParams = (paramText, functionName, text) => {
       label: paramEntry,
       documentation: paramDoc,
     };
-  });
+  }
 
   return params;
 };
@@ -278,7 +276,7 @@ const buildFunctionSignature = (functionMatch, fileText, fileName) => {
     functionObject: {
       label: functionLabel,
       documentation: functionDocumentation,
-      params: getParams(paramsText, functionName, fileText),
+      params: getParams(paramsText, fileText),
     },
   };
 };
