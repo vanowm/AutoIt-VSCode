@@ -13,7 +13,18 @@ const commentEndRegex = /^\s*#(?:ce|comments-end)/;
 const commentStartRegex = /^\s*#(?:cs|comments-start)/;
 const continuationRegex = /\s_\b\s*(;.*)?\s*/;
 
-const createVariableSymbol = (variable, variableKind, doc, line, container) => {
+/**
+ * Creates a symbol information object for a variable.
+ *
+ * @param {Object} params - The input parameters.
+ * @param {string} params.variable - The name of the variable.
+ * @param {SymbolKind} params.variableKind - The kind of the variable symbol.
+ * @param {TextDocument} params.doc - The document where the variable is defined.
+ * @param {Range} params.line - The range of the line where the variable is defined.
+ * @param {string} [params.container=null] - The name of the container where the variable is defined.
+ * @returns {SymbolInformation} The symbol information object for the variable.
+ */
+const createVariableSymbol = ({ variable, variableKind, doc, line, container = null }) => {
   return new SymbolInformation(
     variable,
     variableKind,
@@ -28,11 +39,10 @@ const createVariableSymbol = (variable, variableKind, doc, line, container) => {
  * @param {String} functionName The name of the function from the AutoIt script
  * @param {TextDocument} doc The current document to search
  * @param {Number} lineNum The function's starting line number within the document
- * @returns SymbolInformation
+ * @returns {SymbolInformation} The generated SymbolInformation object
  */
 const createFunctionSymbol = (functionName, doc, lineNum) => {
   const pattern = new RegExp(
-    // `^Func\\s+\\b(?<funcName>${functionName}\\b).*\\n(?:(?!EndFunc\\b).*\\n)*EndFunc.*\\n?`
     `[\t ]*(?:volatile[\t ]+)?Func[\t ]+\\b(?<funcName>${functionName}+\\b).*?(EndFunc)`,
     'gsi',
   );
@@ -41,7 +51,7 @@ const createFunctionSymbol = (functionName, doc, lineNum) => {
   // Establish starting position for regex search
   pattern.lastIndex = doc.offsetAt(doc.lineAt(lineNum).range.start);
   const result = pattern.exec(docText);
-  if (result === null) {
+  if (!result) {
     return null;
   }
   const endPoint = result.index + result[0].length;
@@ -183,7 +193,9 @@ function parseVariablesFromtext(params) {
       const container = findVariableContainer(result, line);
 
       if (!isVariableInResults(result, variable, container)) {
-        result.push(createVariableSymbol(variable, variableKind, doc, line, container.name));
+        result.push(
+          createVariableSymbol({ variable, variableKind, doc, line, container: container.name }),
+        );
         found.add(variable);
       }
     }
