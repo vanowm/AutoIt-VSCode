@@ -11,12 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Signature help pulls description and parameters from function headers
 - Option to disable `(` as an option to accept function completion suggestions
+- Syntax highlighting for `#Tidy_On`, `#Tidy_Off`, and `#Tidy_ILC_Pos` directives
 
 ### Changed
 
 - Path checks for utility executables (e.g., Au3Check) reduced to occur when changes are made and disabled for non-Windows OSes
 - Simplified regex for functions
 - Trimmed spaces in insertHeader command
+- Removed default configuration settings that were overriding user settings
 
 ### Fixed
 
@@ -27,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Contributors
 
-[@vanowm](https://github.com/vanowm)
+[@vanowm](https://github.com/vanowm), [@rcmaehl](https://github.com/rcmaehl)
 
 ## [1.0.11] - 2023-02-21
 
