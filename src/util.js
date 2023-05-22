@@ -98,7 +98,6 @@ workspace.onDidChangeConfiguration(event => {
  * @returns Returns an array of Completion objects
  */
 const fillCompletions = (entries, kind, detail = '', requiredScript = '') => {
-
   const filledCompletion = entries.map(entry => {
     const newDoc = new MarkdownString(entry.documentation);
     if (requiredScript) newDoc.appendCodeblock(`#include <${requiredScript}>`, 'autoit');
@@ -253,6 +252,12 @@ const getParams = (paramText, functionName, text) => {
   return params;
 };
 
+const getHeaderRegex = functionName =>
+  new RegExp(
+    `;\\s*Name\\s*\\.+:\\s+${functionName}\\s*[\r\n]` +
+      `;\\s+Description\\s*\\.+:\\s+(?<description>.+)[\r\n]`,
+  );
+
 /**
  * Extracts function data from pattern and returns an object containing function name and object
  * @param {RegExpExecArray} functionMatch The results of the includeFuncPattern match
@@ -261,11 +266,9 @@ const getParams = (paramText, functionName, text) => {
  * @returns {Object} Object containing function name and object
  */
 const buildFunctionSignature = (functionMatch, fileText, fileName) => {
-  const functionName = functionMatch[2];
-  const functionLabel = functionMatch[1];
-  const headerRegex = new RegExp(
-    `;\\s*Name\\s*\\.+:\\s+${functionName}\\s*[\r\n];\\s+Description\\s*\\.+:\\s+(?<description>.+)[\r\n];\\s*Syntax`,
-  );
+  const { 1: functionLabel, 2: functionName, 3: paramsText } = functionMatch;
+
+  const headerRegex = getHeaderRegex(functionName);
   const headerMatch = fileText.match(headerRegex);
   const description = headerMatch ? `${headerMatch.groups.description}\r` : '';
   const functionDocumentation = `${description}Included from ${fileName}`;
@@ -275,7 +278,7 @@ const buildFunctionSignature = (functionMatch, fileText, fileName) => {
     functionObject: {
       label: functionLabel,
       documentation: functionDocumentation,
-      params: getParams(functionMatch[3], functionName, fileText),
+      params: getParams(paramsText, functionName, fileText),
     },
   };
 };
