@@ -217,12 +217,34 @@ const getIncludeScripts = (document, docText, scriptsToSearch) => {
 };
 
 /**
+ * Extracts the documentation for a specific parameter from a given text.
+ *
+ * @param {string} text - The text containing the parameter documentation.
+ * @param {string} paramEntry - The name of the parameter entry to extract the documentation for.
+ * @param {number} headerIndex - The index where the header starts in the text.
+ * @returns {string} The documentation for the specified parameter, or an empty string if not found.
+ */
+const extractParamDocumentation = (text, paramEntry, headerIndex) => {
+  if (headerIndex === -1) return '';
+
+  const headerSubstring = text.substring(headerIndex);
+  const parameterDocRegex = new RegExp(
+    `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s(?<documentation>.+)`,
+  );
+
+  const paramDocMatch = parameterDocRegex.exec(headerSubstring);
+  const paramDoc = paramDocMatch ? paramDocMatch.groups.documentation : '';
+
+  return paramDoc;
+};
+
+/**
  * Returns an object with each parameter as a key and an object with label and documentation properties as its value.
  * @param {string} paramText - A string of comma-separated parameters.
  * @param {string} text - The text from the document
  * @returns {Object} An object with each parameter as a key and an object with label and documentation properties as its value.
  */
-const getParams = (paramText, text) => {
+const getParams = (paramText, text, headerIndex) => {
   const params = {};
 
   if (!paramText) return params;
@@ -234,12 +256,7 @@ const getParams = (paramText, text) => {
       .trim()
       .replace(/^ByRef\s*/, '');
 
-    const parameterDocRegex = new RegExp(
-      `;\\s*(?:Parameters\\s*\\.+:)?\\s*(?:\\${paramEntry})\\s+-\\s(?<documentation>.+)`,
-    );
-
-    const paramDocMatch = text.match(parameterDocRegex);
-    const paramDoc = paramDocMatch ? paramDocMatch.groups.documentation : '';
+    const paramDoc = extractParamDocumentation(text, paramEntry, headerIndex);
 
     params[paramEntry] = {
       label: paramEntry,
@@ -270,13 +287,14 @@ const buildFunctionSignature = (functionMatch, fileText, fileName) => {
   const headerMatch = fileText.match(headerRegex);
   const description = headerMatch ? `${headerMatch.groups.description}\r` : '';
   const functionDocumentation = `${description}Included from ${fileName}`;
+  const functionIndex = headerMatch ? headerMatch.index : -1;
 
   return {
     functionName,
     functionObject: {
       label: functionLabel,
       documentation: functionDocumentation,
-      params: getParams(paramsText, fileText),
+      params: getParams(paramsText, fileText, functionIndex),
     },
   };
 };
