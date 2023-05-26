@@ -23,7 +23,7 @@ const AutoItDefinitionProvider = {
     // If nothing was found, search include files
     match = this.findDefinitionInIncludeFiles(documentText, definitionRegex, document);
 
-    if (match) {
+    if (match.found) {
       const { scriptPath } = match;
       const scriptContentBeforeMatch = match.scriptContent
         .slice(0, match.found.index + (match[1] || '').length)
