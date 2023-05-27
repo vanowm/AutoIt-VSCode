@@ -504,77 +504,71 @@ const AiOut = ({ id, aiOutProcess }) => {
   };
 
   let hotkeyFailedMsgFound = false;
-  // using proxy to "forward" all property calls to aiOutCommon and aiOutProcess
-  return new Proxy(aiOutCommon, {
-    get(aiOut, prop, proxy) {
-      const isFlush = prop === 'flush';
-      const isError = prop === 'error';
+  const get = (aiOut, prop, proxy) => {
+    const isFlush = prop === 'flush';
+    const isError = prop === 'error';
 
-      // eslint-disable-next-line no-param-reassign
-      if (isFlush) prop = 'append';
-      // eslint-disable-next-line no-param-reassign
-      else if (isError) prop = 'appendLine';
+    if (isFlush) prop = 'append';
+    else if (isError) prop = 'appendLine';
 
-      let ret = aiOut[prop];
-      if (ret instanceof Function) {
-        ret = text => {
-          if (text === undefined) return;
-          // incoming text maybe split in chunks
-          // to detect message about failed hotkeys we need a complete line
-          // therefore we split text into lines and show right the way only the complete ones
-          // if after 100 milliseconds nothing else received we show the incomplete line
-          clearTimeout(prevLineTimer);
-          const lines = prop === 'append' ? text.split(/\r?\n/) : [text];
-          lines[0] = prevLine + lines[0];
-          for (let i = 0; i < lines.length; i += 1) {
-            if (!hotkeyFailedMsgFound) {
-              for (let r = 0; r < hotkeyFailedMsg.length; r += 1) {
-                const line = lines[i].replace(hotkeyFailedMsg[r][0], '');
-                // eslint-disable-next-line no-continue
-                if (line === lines[i]) continue;
+    let ret = aiOut[prop];
+    if (!(ret instanceof Function)) return ret;
+    ret = text => {
+      if (text === undefined) return;
+      // incoming text maybe split in chunks
+      // to detect message about failed hotkeys we need a complete line
+      // therefore we split text into lines and show right the way only the complete ones
+      // if after 100 milliseconds nothing else received we show the incomplete line
+      clearTimeout(prevLineTimer);
+      const lines = prop === 'append' ? text.split(/\r?\n/) : [text];
+      lines[0] = prevLine + lines[0];
+      for (let i = 0; i < lines.length; i += 1) {
+        if (hotkeyFailedMsgFound) continue;
+        for (let r = 0; r < hotkeyFailedMsg.length; r += 1) {
+          const line = lines[i].replace(hotkeyFailedMsg[r][0], '');
+          if (line === lines[i]) continue;
 
-                hotkeyFailedMsg[r].shift();
-                if (hotkeyFailedMsg[r].length) {
-                  lines.splice((i -= 1), 1);
-                  break;
-                }
-
-                aWrapperHotkey.reset(id);
-                // lines.splice(i--, 1);
-                lines[i] = `+>Setting Hotkeys...--> Press `;
-                if (keybindings[`${commandsPrefix}restartScript`])
-                  lines[i] += `${keybindings[`${commandsPrefix}restartScript`]} to Restart`;
-
-                if (
-                  keybindings[`${commandsPrefix}killScript`] ||
-                  keybindings[`${commandsPrefix}killScriptOpened`]
-                ) {
-                  if (keybindings[`${commandsPrefix}restartScript`]) lines[i] += ` or `;
-
-                  lines[i] += `${keybindings[`${commandsPrefix}killScript`] ||
-                    keybindings[`${commandsPrefix}killScriptOpened`]} to Stop.`;
-                }
-                hotkeyFailedMsgFound = true;
-                break;
-              }
-            }
+          hotkeyFailedMsg[r].shift();
+          if (hotkeyFailedMsg[r].length) {
+            lines.splice((i -= 1), 1);
+            break;
           }
-          prevLine = !isFlush && prop === 'append' ? lines[lines.length - 1] : '';
-          if (prevLine) {
-            // last line is not complete, remove it from current text and delay showing it
-            if (lines.length > 1) lines[lines.length - 1] = '';
-            else lines.pop();
 
-            prevLineTimer = setTimeout(() => proxy.flush(), 100);
+          aWrapperHotkey.reset(id);
+          // lines.splice(i--, 1);
+          lines[i] = `+>Setting Hotkeys...--> Press `;
+          if (keybindings[`${commandsPrefix}restartScript`])
+            lines[i] += `${keybindings[`${commandsPrefix}restartScript`]} to Restart`;
+
+          if (
+            keybindings[`${commandsPrefix}killScript`] ||
+            keybindings[`${commandsPrefix}killScriptOpened`]
+          ) {
+            if (keybindings[`${commandsPrefix}restartScript`]) lines[i] += ` or `;
+
+            lines[i] += `${keybindings[`${commandsPrefix}killScript`] ||
+              keybindings[`${commandsPrefix}killScriptOpened`]} to Stop.`;
           }
-          if (lines.length) outputText(aiOut, prop, lines);
-        };
+          hotkeyFailedMsgFound = true;
+          break;
+        }
       }
-      if (isFlush) ret('');
+      prevLine = !isFlush && prop === 'append' ? lines[lines.length - 1] : '';
+      if (prevLine) {
+        // last line is not complete, remove it from current text and delay showing it
+        if (lines.length > 1) lines[lines.length - 1] = '';
+        else lines.pop();
 
-      return ret;
-    },
-  });
+        prevLineTimer = setTimeout(() => proxy.flush(), 100);
+      }
+      if (lines.length) outputText(aiOut, prop, lines);
+    };
+    if (isFlush) ret('');
+
+    return ret;
+  }; // get
+  // using proxy to "forward" all property calls to aiOutCommon and aiOutProcess
+  return new Proxy(aiOutCommon, { get });
 }; // AiOut
 
 let hhproc;

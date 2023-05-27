@@ -185,74 +185,76 @@ const findFilepath = (file, library = true) => {
   return false;
 };
 
+function getPathsSmartHelp(defaultPath, confValue, i) {
+  defaultPath.fullPath = {};
+  for (const prefix in confValue) {
+    if (!Object.hasOwn(defaultPath, prefix)) continue;
+    const val = confValue[prefix];
+    if (
+      prefix === '_yourUdfFuncPrefix_' ||
+      typeof val.chmPath !== 'string' ||
+      (typeof val.udfPath !== 'string' && !Array.isArray(val.udfPath))
+    )
+      continue;
+
+    const chmPath = val.chmPath.trim();
+    const data = Object.assign({ fullPath: '' }, defaultPath.check);
+    const udfPath = Array.isArray(val.udfPath) ? [...val.udfPath] : val.udfPath.split('|');
+    const msgSuffix = `${i}.${prefix}`;
+
+    updateFullPath(chmPath, data, `${msgSuffix}.chmPath`);
+
+    for (let k = 0; k < udfPath.length; k++) {
+      const oData = Object.assign({ fullPath: '' }, defaultPath.check);
+      const bShowErrors = showErrors;
+      const sMsgSuffix = msgSuffix;
+      const aUdfPath = udfPath;
+      updateFullPath(udfPath[k], oData).then(filePath => {
+        if (!filePath) {
+          filePath = findFilepath(aUdfPath[k], true);
+        }
+        if (filePath) {
+          aUdfPath[k] = filePath;
+        } else if (bShowErrors) {
+          showError(aUdfPath[k], oData, `${sMsgSuffix}.udfPath[${k}]`);
+        }
+      });
+    }
+    defaultPath.fullPath[prefix] = {
+      chmPath: data.fullPath,
+      udfPath,
+    };
+  }
+}
+
 function getPaths() {
   aiPath = splitPath(conf.data.aiPath || '');
 
   for (const i in conf.defaultPaths) {
-    if (Object.hasOwn(conf.defaultPaths, i)) {
-      const defaultPath = conf.defaultPaths[i];
-      const confValue = conf.data[i];
+    if (!Object.hasOwn(conf.defaultPaths, i)) continue;
+    const defaultPath = conf.defaultPaths[i];
+    const confValue = conf.data[i];
 
-      if (i === 'smartHelp') {
-        if (Array.isArray(confValue))
-          // convert array-based old config into new object-based
-          return upgradeSmartHelpConfig();
+    if (i === 'smartHelp') {
+      if (Array.isArray(confValue))
+        // convert array-based old config into new object-based
+        return upgradeSmartHelpConfig();
 
-        defaultPath.fullPath = {};
-        for (const prefix in confValue) {
-          if (Object.hasOwn(defaultPath, prefix)) {
-            const val = confValue[prefix];
-            if (
-              prefix === '_yourUdfFuncPrefix_' ||
-              typeof val.chmPath !== 'string' ||
-              (typeof val.udfPath !== 'string' && !Array.isArray(val.udfPath))
-            )
-              continue;
+      getPathsSmartHelp(defaultPath, confValue, i);
+    } else if (Array.isArray(confValue)) {
+      for (let j = 0; j < confValue.length; j++) {
+        let sPath = (typeof confValue[j] === 'string' ? confValue[j] : '').trim();
 
-            const chmPath = val.chmPath.trim();
-            const data = Object.assign({ fullPath: '' }, defaultPath.check);
-            const udfPath = Array.isArray(val.udfPath) ? [...val.udfPath] : val.udfPath.split('|');
-            const msgSuffix = `${i}.${prefix}`;
+        if (sPath === '' && i === 'includePaths') sPath = 'Include';
 
-            updateFullPath(chmPath, data, `${msgSuffix}.chmPath`);
+        if (defaultPath[j] === undefined)
+          defaultPath[j] = Object.assign({ fullPath: '' }, defaultPath[0].check);
 
-            for (let k = 0; k < udfPath.length; k++) {
-              const oData = Object.assign({ fullPath: '' }, defaultPath.check);
-              const bShowErrors = showErrors;
-              const sMsgSuffix = msgSuffix;
-              const aUdfPath = udfPath;
-              updateFullPath(udfPath[k], oData).then(filePath => {
-                if (!filePath) {
-                  filePath = findFilepath(aUdfPath[k], true);
-                }
-                if (filePath) {
-                  aUdfPath[k] = filePath;
-                } else if (bShowErrors) {
-                  showError(aUdfPath[k], oData, `${sMsgSuffix}.udfPath[${k}]`);
-                }
-              });
-            }
-            defaultPath.fullPath[prefix] = {
-              chmPath: data.fullPath,
-              udfPath,
-            };
-          }
-        }
-      } else if (Array.isArray(confValue)) {
-        for (let j = 0; j < confValue.length; j++) {
-          let sPath = (typeof confValue[j] === 'string' ? confValue[j] : '').trim();
-
-          if (sPath === '' && i === 'includePaths') sPath = 'Include';
-
-          if (defaultPath[j] === undefined)
-            defaultPath[j] = Object.assign({ fullPath: '' }, defaultPath[0].check);
-
-          updateFullPath(sPath, defaultPath[j], `${i}[${j}]`);
-        }
-      } else {
-        defaultPath.fullPath = fixPath(confValue, defaultPath);
-        verifyPath(confValue, defaultPath, i);
+        updateFullPath(sPath, defaultPath[j], `${i}[${j}]`);
       }
+    } else {
+      defaultPath.fullPath = fixPath(confValue, defaultPath);
+      verifyPath(confValue, defaultPath, i);
     }
   }
   return undefined;
