@@ -200,7 +200,7 @@ function getPaths() {
 
         defaultPath.fullPath = {};
         for (const prefix in confValue) {
-          if (Object.hasOwn(defaultPath, prefix)) {
+          if (Object.hasOwn(confValue, prefix)) {
             const val = confValue[prefix];
             if (
               prefix === '_yourUdfFuncPrefix_' ||
