@@ -231,9 +231,11 @@ function getPaths() {
   aiPath = splitPath(conf.data.aiPath || '');
 
   for (const i in conf.defaultPaths) {
+
     if (!Object.hasOwn(conf.defaultPaths, i)) continue;
     const defaultPath = conf.defaultPaths[i];
     const confValue = conf.data[i];
+
 
     if (i === 'smartHelp') {
       if (Array.isArray(confValue))
