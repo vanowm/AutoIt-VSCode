@@ -45,8 +45,8 @@ const AutoItDefinitionProvider = {
   determineRegex(lookup) {
     const variableRegex = /(?<![;].*)(?<!(?:#cs|#comments-start).*)((?:Local|Global|Const)\s*)?@(?:\[[\w\d\\$]+\])?\s*=?.*(?![^#]*(#ce|#comments-end))/;
 
-    if (lookup.charAt(0) === '$') {
-      return new RegExp(variableRegex.source.replace('@', `\\${lookup}`), 'i');
+    if (lookup.startsWith('$')) {
+      return new RegExp(variableRegex.source.replace('@', `\\${lookup}\\b`), 'i');
     }
     return new RegExp(
       `(?<![;].*)(?<!(?:#cs|#comments-start).*)(Func\\s+)${lookup}\\s*\\((?![^#]*(#ce|#comments-end))`,
