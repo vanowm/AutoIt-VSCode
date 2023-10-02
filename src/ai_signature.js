@@ -4,6 +4,7 @@ import {
   SignatureInformation,
   ParameterInformation,
   MarkdownString,
+  Hover,
 } from 'vscode';
 import {
   includePattern,
@@ -130,7 +131,7 @@ function getLibraryIncludesFromText(text) {
  * @param {Object} doc - The document to search for includes.
  * @returns {Object} An object containing the includes found in the document.
  */
-function getIncludes(doc) {
+function getIncludedFunctionSignatures(doc) {
   const text = doc.getText();
   const includesCheck = getIncludesFromText(text);
   const libraryIncludes = getLibraryIncludesFromText(text);
@@ -160,10 +161,10 @@ function getIncludes(doc) {
 
 /**
  * Returns an object of AutoIt functions found within the current AutoIt script
- * @param {vscode.TextDocument} doc The  TextDocument object representing the AutoIt script
+ * @param {vscode.TextDocument} doc The TextDocument object representing the AutoIt script
  * @returns {Object} Object containing SignatureInformation objects
  */
-function getLocalSigs(doc) {
+function getLocalFunctionSignatures(doc) {
   const text = doc.getText();
   const functions = {};
 
@@ -197,6 +198,36 @@ function createSignatureInfo(foundSig) {
   return signatureInfo;
 }
 
+/**
+ * Creates a Hover object for the user created functions.
+ *
+ * @param {TextDocument} document - The TextDocument object representing the AutoIt script
+ * @param {Position} position - The position of the cursor when the function was called
+ * @returns {Hover | null} - A Hover object containing the hover info, or null if no info found.
+ */
+export const signatureHoverProvider = languages.registerHoverProvider(AUTOIT_MODE, {
+  provideHover(document, position) {
+    const hoveredPosition = document.getWordRangeAtPosition(position);
+    if (!hoveredPosition) return null;
+    const hoveredWord = document.getText(hoveredPosition);
+
+    const allSignatures = {
+      ...getIncludedFunctionSignatures(document),
+      ...getLocalFunctionSignatures(document),
+    };
+
+    const matchedSignature = allSignatures[hoveredWord];
+
+    if (!matchedSignature || !matchedSignature.label) return null;
+
+    const documentationLines = matchedSignature.documentation.split('\r');
+    documentationLines[1] = `##### ${documentationLines[1]}`;
+    const hoverText = [...documentationLines, `\`\`\`\r${matchedSignature.label}\r\`\`\``];
+
+    return new Hover(hoverText);
+  },
+});
+
 export default languages.registerSignatureHelpProvider(
   AUTOIT_MODE,
   {
@@ -210,7 +241,11 @@ export default languages.registerSignatureHelpProvider(
       const caller = getCallInfo(document, position);
       if (!caller.func) return null;
 
-      const allSignatures = { ...defaultSigs, ...getIncludes(document), ...getLocalSigs(document) };
+      const allSignatures = {
+        ...defaultSigs,
+        ...getIncludedFunctionSignatures(document),
+        ...getLocalFunctionSignatures(document),
+      };
 
       const matchedSignature = allSignatures[caller.func];
       if (!matchedSignature) return null;
