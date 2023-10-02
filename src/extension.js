@@ -6,7 +6,7 @@ import languageConfiguration from './languageConfiguration';
 import hoverFeature from './ai_hover';
 import completionFeature from './ai_completion';
 import symbolsFeature from './ai_symbols';
-import signaturesFeature from './ai_signature';
+import signaturesFeature, { signatureHoverProvider } from './ai_signature';
 import workspaceSymbolsFeature from './ai_workspaceSymbols';
 import goToDefinitionFeature from './ai_definition';
 
@@ -89,6 +89,7 @@ export const activate = ctx => {
     completionFeature,
     symbolsFeature,
     signaturesFeature,
+    signatureHoverProvider,
     workspaceSymbolsFeature,
     goToDefinitionFeature,
   ];
