@@ -188,7 +188,7 @@ const findFilepath = (file, library = true) => {
 function getPathsSmartHelp(defaultPath, confValue, i) {
   defaultPath.fullPath = {};
   for (const prefix in confValue) {
-    if (!Object.hasOwn(defaultPath, prefix)) continue;
+    if (!Object.hasOwn(confValue, prefix)) continue;
     const val = confValue[prefix];
     if (
       prefix === '_yourUdfFuncPrefix_' ||
