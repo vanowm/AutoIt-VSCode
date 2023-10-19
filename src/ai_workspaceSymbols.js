@@ -1,24 +1,23 @@
-import { languages, workspace } from 'vscode';
-
+import { languages, workspace, window } from 'vscode';
 import { provideDocumentSymbols } from './ai_symbols';
 
 let symbolsCache = [];
 
 async function getWorkspaceSymbols() {
-  const symbols = [];
-  const data = await workspace.findFiles('**/*.{au3,a3x}');
-  // const foundVars = new Set();
+  const workspaceScripts = await workspace.findFiles('**/*.{au3,a3x}');
 
-  await Promise.all(
-    data.map(async file => {
-      const thisDocument = await workspace.openTextDocument(file);
-      const fileSymbols = provideDocumentSymbols(thisDocument);
+  const scriptPromises = workspaceScripts.map(async file => {
+    const thisDocument = await workspace.openTextDocument(file);
+    return provideDocumentSymbols(thisDocument);
+  });
 
-      symbols.push(...fileSymbols);
-    }),
-  );
-
-  return symbols;
+  try {
+    const symbols = await Promise.all(scriptPromises);
+    return symbols.flat();
+  } catch (error) {
+    window.showErrorMessage(error);
+    return null;
+  }
 }
 
 async function provideWorkspaceSymbols() {
