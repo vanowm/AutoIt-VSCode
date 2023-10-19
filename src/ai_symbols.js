@@ -264,39 +264,31 @@ function provideDocumentSymbols(doc) {
     const { text } = line;
     const regionName = text.match(regionPattern);
 
-    if (isSkippableLine(line) && !regionName) {
-      // eslint-disable-next-line no-continue
-      continue;
+    if (!isSkippableLine(line) || regionName) {
+      if (!inComment) {
+        parseFunctionFromText({ text, processedSymbols, doc, lineNum, result });
+
+        ({ inContinuation, variableKind } = parseVariablesFromText({
+          inContinuation,
+          text,
+          found: processedSymbols,
+          doc,
+          result,
+          line,
+          variableKind,
+        }));
+
+        parseRegionFromText({ regionName, found: processedSymbols, doc, result });
+      }
     }
 
     if (commentEndRegex.test(text)) {
       inComment = false;
-      // eslint-disable-next-line no-continue
-      continue;
     }
 
     if (commentStartRegex.test(text)) {
       inComment = true;
     }
-
-    if (inComment) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-
-    parseFunctionFromText({ text, processedSymbols, doc, lineNum, result });
-
-    ({ inContinuation, variableKind } = parseVariablesFromText({
-      inContinuation,
-      text,
-      found: processedSymbols,
-      doc,
-      result,
-      line,
-      variableKind,
-    }));
-
-    parseRegionFromText({ regionName, found: processedSymbols, doc, result });
   }
 
   return result;
