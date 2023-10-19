@@ -92,6 +92,17 @@ const createRegionSymbol = (regionName, doc, docText) => {
   return newRegionSymbol;
 };
 
+/**
+ * Extracts function symbols from a given text and adds them to a result array.
+ *
+ * @param {Object} params - An object containing the following properties:
+ *   @param {string} params.text - The text to search for function symbols.
+ *   @param {Set} params.processedSymbols - A set of already processed function symbols.
+ *   @param {vscode.TextDocument} params.doc - The document object representing the text.
+ *   @param {number} params.lineNum - The line number where the function symbol is located.
+ *   @param {Array} params.result - An array to store the extracted function symbols.
+ * @returns {void} None. The extracted function symbols are added to the `result` array provided in the `params` object.
+ */
 const parseFunctionFromText = params => {
   const { text, processedSymbols, doc, lineNum, result } = params;
 
@@ -105,6 +116,16 @@ const parseFunctionFromText = params => {
   processedSymbols.add(funcName[1]);
 };
 
+/**
+ * Parses the region from the given text and adds it to the result array and found set.
+ *
+ * @param {Object} params - An object containing the parameters.
+ * @param {Array} params.regionName - An array containing the matched region name from the text.
+ * @param {Set} params.found - A set containing the already found region names.
+ * @param {Object} params.doc - The document object.
+ * @param {Array} params.result - An array to store the symbol information objects.
+ * @returns {void} This function does not return anything.
+ */
 const parseRegionFromText = params => {
   if (!config.showRegionsInGoToSymbol) return;
 
@@ -123,14 +144,15 @@ const delims = ["'", '"', ';'];
  * Finds the variable container for a given line.
  * @param {Array} result - An array of symbols to search through.
  * @param {Object} line - The line to find the variable container for.
- * @returns {Object|string} The variable container or an empty string if not found.
+ * @returns {Object} The variable container or an empty object if not found.
  */
-function findVariableContainer(result, line) {
+function findContainerForVariable(result, line) {
   return (
     result.find(
-      testSymbol =>
-        testSymbol.location.range.contains(line.range) && testSymbol.kind === SymbolKind.Function,
-    ) || ''
+      symbolToTest =>
+        symbolToTest.location.range.contains(line.range) &&
+        symbolToTest.kind === SymbolKind.Function,
+    ) || {}
   );
 }
 
@@ -174,7 +196,24 @@ function getVariableKind(text, inContinuation, variableKind) {
   }
 }
 
-function parseVariablesFromtext(params) {
+/**
+ * Extracts variables from a given text and adds them to a result array.
+ * Determines the kind of variable and checks if it already exists in the result array.
+ * @param {object} params - An object containing the following properties:
+ *   @param {string} params.text - The text to parse for variables.
+ *   @param {array} params.result - An array to store the extracted variables.
+ *   @param {number} params.line - The line number of the text.
+ *   @param {Set} params.found - A set to keep track of already found variables.
+ *   @param {string} params.doc - The documentation for the variables.
+ *   @param {boolean} params.inContinuation - Indicates if the text is a continuation of a previous line.
+ *   @param {string} params.variableKind - The kind of variable (e.g., local, global).
+ * @returns {object} An object containing the following properties:
+ *   @returns {boolean} inContinuation - Indicates if the text is a continuation of a previous line.
+ *   @returns {string} variableKind - The kind of variable (e.g., local, global).
+ *   @returns {array} params.result - The updated array of extracted variables.
+ *   @returns {Set} params.found - The set of found variables.
+ */
+function parseVariablesFromText(params) {
   const { text, result, line, found, doc } = params;
   let { inContinuation, variableKind } = params;
 
@@ -190,7 +229,7 @@ function parseVariablesFromtext(params) {
   for (let i = 0; i < variables.length; i += 1) {
     const variable = variables[i];
     if (!AI_CONSTANTS.includes(variable) && !delims.includes(variable.charAt(0))) {
-      const container = findVariableContainer(result, line);
+      const container = findContainerForVariable(result, line);
 
       if (!isVariableInResults(result, variable, container)) {
         result.push(
@@ -204,6 +243,14 @@ function parseVariablesFromtext(params) {
   return { inContinuation, variableKind };
 }
 
+/**
+ * Provides the document symbols for a given document.
+ * It parses the text of the document line by line and extracts information about functions, variables, and regions.
+ * Returns an array of symbol information objects.
+ *
+ * @param {Document} doc - The document for which to provide symbols.
+ * @returns {Array} An array of symbol information objects, each containing the name, kind, and range of a symbol in the document.
+ */
 function provideDocumentSymbols(doc) {
   const result = [];
   const processedSymbols = new Set();
@@ -239,7 +286,7 @@ function provideDocumentSymbols(doc) {
 
     parseFunctionFromText({ text, processedSymbols, doc, lineNum, result });
 
-    ({ inContinuation, variableKind } = parseVariablesFromtext({
+    ({ inContinuation, variableKind } = parseVariablesFromText({
       inContinuation,
       text,
       found: processedSymbols,
