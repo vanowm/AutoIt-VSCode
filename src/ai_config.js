@@ -1,4 +1,4 @@
-import { workspace, Uri, FileType } from 'vscode';
+import { workspace, Uri, FileType, window } from 'vscode';
 import fs from 'fs';
 import path from 'path';
 import { showErrorMessage } from './ai_showMessage';
@@ -231,11 +231,9 @@ function getPaths() {
   aiPath = splitPath(conf.data.aiPath || '');
 
   for (const i in conf.defaultPaths) {
-
     if (!Object.hasOwn(conf.defaultPaths, i)) continue;
     const defaultPath = conf.defaultPaths[i];
     const confValue = conf.data[i];
-
 
     if (i === 'smartHelp') {
       if (Array.isArray(confValue))
@@ -270,7 +268,7 @@ workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
     try {
       listener();
     } catch (er) {
-      console.error(er);
+      window.showErrorMessage(er);
     }
   });
   showErrors = isWinOS;
