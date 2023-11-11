@@ -62,9 +62,10 @@ const AutoItDefinitionProvider = {
    */
   findDefinitionInIncludeFiles(docText, defRegex, document) {
     const scriptsToSearch = [];
+    let returnObject = false;
     getIncludeScripts(document, docText, scriptsToSearch);
 
-    const searchScript = (script, returnObject = false) => {
+    const searchScript = (script) => {
       const scriptPath = getIncludePath(script, document);
       const scriptContent = getIncludeText(scriptPath);
       const found = scriptContent.match(defRegex);
@@ -77,7 +78,8 @@ const AutoItDefinitionProvider = {
     const match = scriptsToSearch.find(searchScript);
 
     if (match) {
-      return searchScript(match, true);
+      returnObject = true;
+      return searchScript(match);
     }
 
     return null;
