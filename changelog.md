@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Command to remove Debug to Console and MsgBox lines added by the extension
+
+### Changed
+
+### Fixed
+
 ## [1.0.12] - 2023-09-26
 
 ### Added

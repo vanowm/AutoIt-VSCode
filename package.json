@@ -131,6 +131,10 @@
         {
           "command": "extension.restartScript",
           "when": "editorLangId == autoit"
+        },
+        {
+          "command": "extension.debugRemove",
+          "when": "editorLangId == autoit"
         }
       ]
     },
@@ -198,6 +202,9 @@
       {
         "command": "extension.restartScript",
         "title": "AutoIt: Restart script"
+      }, {
+        "command": "extension.debugRemove",
+        "title": "AutoIt: Debug Remove lines"
       }
     ],
     "grammars": [
@@ -295,6 +302,11 @@
       {
         "command": "extension.restartScript",
         "key": "ctrl+alt+pausebreak",
+        "when": "editorTextFocus && editorLangId == autoit"
+      },
+      {
+        "command": "extension.debugRemove",
+        "key": "ctrl+alt+z",
         "when": "editorTextFocus && editorLangId == autoit"
       }
     ],

@@ -77,6 +77,7 @@ By default, this extension is set up for the default installation of AutoIt and 
 - Peek Definition (Show declarations in pop up): `Alt+F12`
 - Open Include file (On the current line): `Alt+i`
 - Insert UDF Header: `Ctrl+Alt+h`
+- Debug Remove lines: `Ctrl+Alt+z`
 
 > **NOTE:**
 >

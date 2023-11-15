@@ -17,4 +17,5 @@ export const commandsList = [
   'openInclude',
   'insertHeader',
   'restartScript',
+  'debugRemove',
 ];
