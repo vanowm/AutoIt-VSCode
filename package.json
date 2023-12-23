@@ -135,6 +135,10 @@
         {
           "command": "extension.debugRemove",
           "when": "editorLangId == autoit"
+        },
+        {
+          "command": "extension.traceRemove",
+          "when": "editorLangId == autoit"
         }
       ]
     },
@@ -205,6 +209,10 @@
       }, {
         "command": "extension.debugRemove",
         "title": "AutoIt: Debug Remove lines"
+      },
+      {
+        "command": "extension.functionTraceAdd",
+        "title": "AutoIt: Trace: Add Func Trace lines"
       }
     ],
     "grammars": [
@@ -307,6 +315,10 @@
       {
         "command": "extension.debugRemove",
         "key": "ctrl+alt+z",
+        "when": "editorTextFocus && editorLangId == autoit"
+      },
+      {
+        "command": "extension.functionTraceAdd",
         "when": "editorTextFocus && editorLangId == autoit"
       }
     ],

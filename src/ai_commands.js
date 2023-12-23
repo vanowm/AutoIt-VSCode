@@ -10,6 +10,8 @@ import conf from './ai_config';
 import { commandsList as _commandsList, commandsPrefix } from './commandsList';
 import { showInformationMessage, showErrorMessage, messages } from './ai_showMessage';
 import debugRemove from './commands/debugRemove';
+import traceRemove from './commands/trace';
+import functionTraceAdd from './commands/functionTraceAdd';
 
 const { config } = conf;
 const aiOutCommon = window.createOutputChannel('AutoIt (global)', 'vscode-autoit-output');
@@ -1175,4 +1177,5 @@ export {
   insertHeader,
   restartScript,
   debugRemove,
+  functionTraceAdd,
 };

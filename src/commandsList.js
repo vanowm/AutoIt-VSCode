@@ -18,4 +18,5 @@ export const commandsList = [
   'insertHeader',
   'restartScript',
   'debugRemove',
+  'functionTraceAdd',
 ];
