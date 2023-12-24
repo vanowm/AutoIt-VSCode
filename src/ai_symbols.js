@@ -197,6 +197,33 @@ function getVariableKind(text, inContinuation, variableKind) {
 }
 
 /**
+ * Determines whether a variable should be skipped or not based on certain conditions.
+ *
+ * @param {string} variable - The variable to check.
+ * @returns {boolean} - A boolean value indicating whether the variable should be skipped or not.
+ *
+ * @example
+ * const variable = 'someVariable';
+ * const shouldSkip = shouldSkipVariable(variable);
+ * console.log(shouldSkip); // true or false
+ */
+function shouldSkipVariable(variable) {
+  return AI_CONSTANTS.includes(variable) || delims.includes(variable.charAt(0));
+}
+
+function addVariableToResults(result, variable, variableKind, doc, line, container) {
+  result.push(
+    createVariableSymbol({
+      variable,
+      variableKind,
+      doc,
+      line,
+      container: container.name,
+    }),
+  );
+}
+
+/**
  * Extracts variables from a given text and adds them to a result array.
  * Determines the kind of variable and checks if it already exists in the result array.
  * @param {object} params - An object containing the following properties:
@@ -228,16 +255,19 @@ function parseVariablesFromText(params) {
 
   for (let i = 0; i < variables.length; i += 1) {
     const variable = variables[i];
-    if (!AI_CONSTANTS.includes(variable) && !delims.includes(variable.charAt(0))) {
-      const container = findContainerForVariable(result, line);
 
-      if (!isVariableInResults(result, variable, container)) {
-        result.push(
-          createVariableSymbol({ variable, variableKind, doc, line, container: container.name }),
-        );
-        found.add(variable);
-      }
+    if (shouldSkipVariable(variable)) {
+      continue;
     }
+
+    const container = findContainerForVariable(result, line);
+
+    if (isVariableInResults(result, variable, container)) {
+      continue;
+    }
+
+    addVariableToResults(result, variable, variableKind, doc, line, container);
+    found.add(variable);
   }
 
   return { inContinuation, variableKind };
