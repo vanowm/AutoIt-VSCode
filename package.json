@@ -213,6 +213,10 @@
       {
         "command": "extension.functionTraceAdd",
         "title": "AutoIt: Trace: Add Func Trace lines"
+      },
+      {
+        "command": "extension.traceRemove",
+        "title": "AutoIt: Trace: Remove ALL Trace lines"
       }
     ],
     "grammars": [

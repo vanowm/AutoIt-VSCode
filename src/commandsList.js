@@ -19,4 +19,5 @@ export const commandsList = [
   'restartScript',
   'debugRemove',
   'functionTraceAdd',
+  'traceRemove',
 ];
