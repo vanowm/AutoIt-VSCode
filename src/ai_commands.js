@@ -1178,4 +1178,5 @@ export {
   restartScript,
   debugRemove,
   functionTraceAdd,
+  traceRemove,
 };
