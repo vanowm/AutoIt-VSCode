@@ -1,42 +1,39 @@
 import * as vscode from 'vscode';
+import searchAndReplace from './commandUtils';
 
-async function functionTraceAdd() {
-  const sPattern = /()([Ff][Uu][Nn][Cc]\s+([^)\s]+)\(.*\))/;
-  let lineOffset = 0;
+// Callback function to modify matched functions
+function patMatch(match, p1, p2, p3) {
+  // const editor = vscode.window.activeTextEditor;
 
-  // Callback function to modify matched functions
-  function patMatch(match, p1, p2, p3, offset) {
-    const editor = vscode.window.activeTextEditor;
-
-    // Check for existing trace statements and skipping comments
-    if (/ConsoleWrite\(@@\(.*\)\)/.test(p1) || p1.includes('; FunctionTraceSkip')) {
-      return match;
-    }
-
-    // Update line offset
-    lineOffset++;
-
-    // Construct trace statement
-    const traceStatement = `ConsoleWrite('@@ (${editor.getLineFromPosition(offset) +
-      lineOffset}) :(${new Date().toLocaleTimeString()}) ${p3}()') & vscode.workspace.eol + '\\t### Trace Function';`;
-
-    // Replace matched function call
-    return p1 + p2 + p3 + traceStatement;
+  // Check for existing trace statements and skipping comments
+  if (/ConsoleWrite\(@@\(.*\)\)/.test(p1) || p1.includes('; FunctionTraceSkip')) {
+    return match;
   }
 
+  // const matchLine = editor.document.positionAt(offset).line;
+
+  const traceStatement = `ConsoleWrite('@@ (' @ScriptLineNumber ') :(' @MIN & ':' & @SEC & ') ${p3}()' & @CR) \t;### Trace Function'`;
+
+  return `${match}\r${traceStatement}`;
+}
+
+async function functionTraceAdd() {
+  const sPattern = /()(\bfunc\b\s+([^)\s]+)\(.*\))/gi;
+
   // Remove existing trace statements
-  vscode.window.activeTextEditor.replace(/ConsoleWrite\(@@\(.*\)\)/g, '');
+  const traceStatementPattern = /\s*ConsoleWrite\('@@ \(.+;### Trace Function'/g;
+  await searchAndReplace(traceStatementPattern);
 
   // Perform replacement using regular expressions
-  const { document } = vscode.window.activeTextEditor;
-  const replaceRange = new vscode.Range(
-    0,
-    document.lineAt(0).range.end,
-    document.lineAt(document.lineCount - 1).range.end,
-  );
+  const editor = vscode.window.activeTextEditor;
+  const { document } = editor;
+  const text = document.getText();
 
-  await document.edit(editBuilder => {
-    editBuilder.replace(replaceRange, document.getText().replace(sPattern, patMatch));
+  const updatedText = text.replace(sPattern, patMatch);
+
+  await editor.edit(editBuilder => {
+    const fullRange = new vscode.Range(document.positionAt(0), document.positionAt(text.length));
+    editBuilder.replace(fullRange, updatedText);
   });
 }
 
