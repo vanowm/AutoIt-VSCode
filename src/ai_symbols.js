@@ -37,32 +37,35 @@ const createVariableSymbol = ({ variable, variableKind, doc, line, container = n
  * Generates a SymbolInformation object for a function from a given TextDocument
  * that includes the full range of the function's body
  * @param {String} functionName The name of the function from the AutoIt script
- * @param {TextDocument} doc The current document to search
- * @param {Number} lineNum The function's starting line number within the document
+ * @param {TextDocument} document The current document to search
+ * @param {Number} startingLineNumber The function's starting line number within the document
  * @returns {SymbolInformation} The generated SymbolInformation object
  */
-const createFunctionSymbol = (functionName, doc, lineNum) => {
-  const pattern = new RegExp(
-    `[\t ]*(?:volatile[\t ]+)?Func[\t ]+\\b(?<funcName>${functionName}+\\b).*?(EndFunc)`,
-    'gsi',
+const generateFunctionSymbol = (functionName, document, text, startingLineNumber) => {
+  const functionBodyPattern = new RegExp(
+    `[\t ]*(?:volatile[\t ]+)?Func[\t ]+\\b${functionName}+\\b.*?EndFunc`,
+    'si',
   );
-  const docText = doc.getText();
 
-  // Establish starting position for regex search
-  pattern.lastIndex = doc.offsetAt(doc.lineAt(lineNum).range.start);
-  const result = pattern.exec(docText);
-  if (!result) {
+  // Set the starting position for the regex search
+  const functionStartIndex = document.offsetAt(document.lineAt(startingLineNumber).range.start);
+  functionBodyPattern.lastIndex = functionStartIndex;
+  const matchResult = functionBodyPattern.exec(text);
+  if (!matchResult) {
     return null;
   }
-  const endPoint = result.index + result[0].length;
-  const newFunctionSymbol = new SymbolInformation(
-    result[1],
+  const functionEndIndex = functionBodyPattern.lastIndex;
+  const functionStartPos = document.positionAt(matchResult.index);
+  const functionEndPos = document.positionAt(functionEndIndex);
+  const functionBodyRange = new Range(functionStartPos, functionEndPos);
+  const functionSymbol = new SymbolInformation(
+    functionName,
     SymbolKind.Function,
     '',
-    new Location(doc.uri, new Range(doc.positionAt(result.index), doc.positionAt(endPoint))),
+    new Location(document.uri, functionBodyRange),
   );
 
-  return newFunctionSymbol;
+  return functionSymbol;
 };
 
 /**
@@ -109,7 +112,7 @@ const parseFunctionFromText = params => {
   const funcName = text.match(functionPattern);
   if (!funcName || processedSymbols.has(funcName[0])) return;
 
-  const functionSymbol = createFunctionSymbol(funcName[1], doc, lineNum);
+  const functionSymbol = generateFunctionSymbol(funcName[1], doc, text, lineNum);
   if (!functionSymbol) return;
 
   result.push(functionSymbol);
