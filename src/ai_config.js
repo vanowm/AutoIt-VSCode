@@ -3,6 +3,56 @@ import fs from 'fs';
 import path from 'path';
 import { showErrorMessage } from './ai_showMessage';
 
+const meta = require('../package.json');
+
+/**
+ * Fix the output style of the extension
+ * #209
+ * @link https://github.com/microsoft/vscode/issues/201603
+ */
+{
+  const cConfig = workspace.getConfiguration('editor');
+  const dataNew = {};
+  let save = false;
+
+  // convert default rules into an object with the scope as key
+  const defaultRules = meta.contributes.configurationDefaults[
+    'editor.tokenColorCustomizations'
+  ].textMateRules.reduce((obj, item) => ((obj[item.scope] = item), obj), {});
+
+  let value = cConfig.get('tokenColorCustomizations');
+  if (typeof value !== 'object' || value === null) value = {};
+
+  const keys = Object.keys(value);
+  if (!Array.isArray(value.textMateRules)) keys.push('textMateRules');
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    // we are only interested in settings that have textMateRules
+    if (key !== 'textMateRules' && !value[key].textMateRules) continue;
+
+    const list = (value[key] && value[key].textMateRules) || value[key] || [];
+    const rules = Object.assign({}, defaultRules);
+    for (let j = 0; j < list.length; j++) {
+      // remove all existing rules, we don't want to replace user-changed rules
+      if (rules[list[j].scope]) delete rules[list[j].scope];
+    }
+    // add all remaining rules
+    for (const scope in rules) {
+      list.push(rules[scope]);
+      save = true;
+    }
+
+    // store data in a new object, because original might be a Proxy
+    if (value[key] && value[key].textMateRules) dataNew[key] = { textMateRules: list };
+    else dataNew[key] = list;
+  }
+  if (save) {
+    // save global settings
+    cConfig.update('tokenColorCustomizations', dataNew, true);
+  }
+}
+
 const conf = {
   data: workspace.getConfiguration('autoit'),
   defaultPaths: {
