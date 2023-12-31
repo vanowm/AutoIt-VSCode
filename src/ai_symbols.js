@@ -173,20 +173,14 @@ const isVariableInResults = (result, variable, container) => {
   );
 };
 
-const variableRegex = /^\s*?(Local|Global)?\s(Const|Enum)/;
+const variableRegex = /^\s*?(Local|Global)?\s*?(Const|Enum)/;
 
 /**
  * Determines the kind of variable based on the text and inContinuation flag.
  * @param {string} text - The text to be matched against the variableRegex.
- * @param {boolean} inContinuation - A flag indicating whether the variable is in continuation.
- * @param {SymbolKind} variableKind - The kind of variable to be returned if inContinuation is true.
  * @returns {SymbolKind} The kind of variable determined by the function.
  */
-function getVariableKind(text, inContinuation, variableKind) {
-  if (inContinuation) {
-    return variableKind;
-  }
-
+function getVariableKind(text) {
   const [, , kind] = text.match(variableRegex) || [];
 
   switch (kind) {
@@ -252,7 +246,7 @@ function parseVariablesFromText(params) {
   const variables = text.match(variablePattern);
   if (!variables) return { inContinuation, variableKind };
 
-  variableKind = getVariableKind(text, inContinuation, variableKind);
+  variableKind = inContinuation ? variableKind : getVariableKind(text);
 
   inContinuation = continuationRegex.test(text);
 
