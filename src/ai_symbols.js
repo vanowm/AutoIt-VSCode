@@ -41,7 +41,7 @@ const createVariableSymbol = ({ variable, variableKind, doc, line, container = n
  * @param {Number} startingLineNumber The function's starting line number within the document
  * @returns {SymbolInformation} The generated SymbolInformation object
  */
-const generateFunctionSymbol = (functionName, document, text, startingLineNumber) => {
+const generateFunctionSymbol = (functionName, document, text, startingLineNumber, scriptText) => {
   const functionBodyPattern = new RegExp(
     `[\t ]*(?:volatile[\t ]+)?Func[\t ]+\\b${functionName}+\\b.*?EndFunc`,
     'si',
@@ -50,11 +50,11 @@ const generateFunctionSymbol = (functionName, document, text, startingLineNumber
   // Set the starting position for the regex search
   const functionStartIndex = document.offsetAt(document.lineAt(startingLineNumber).range.start);
   functionBodyPattern.lastIndex = functionStartIndex;
-  const matchResult = functionBodyPattern.exec(text);
+  const matchResult = functionBodyPattern.exec(scriptText);
   if (!matchResult) {
     return null;
   }
-  const functionEndIndex = functionBodyPattern.lastIndex;
+  const functionEndIndex = matchResult.index + matchResult[0].length;
   const functionStartPos = document.positionAt(matchResult.index);
   const functionEndPos = document.positionAt(functionEndIndex);
   const functionBodyRange = new Range(functionStartPos, functionEndPos);
@@ -107,12 +107,12 @@ const createRegionSymbol = (regionName, doc, docText) => {
  * @returns {void} None. The extracted function symbols are added to the `result` array provided in the `params` object.
  */
 const parseFunctionFromText = params => {
-  const { text, processedSymbols, doc, lineNum, result } = params;
+  const { text, processedSymbols, doc, lineNum, result, scriptText } = params;
 
   const funcName = text.match(functionPattern);
-  if (!funcName || processedSymbols.has(funcName[0])) return;
+  if (!funcName || processedSymbols.has(funcName[1])) return;
 
-  const functionSymbol = generateFunctionSymbol(funcName[1], doc, text, lineNum);
+  const functionSymbol = generateFunctionSymbol(funcName[1], doc, text, lineNum, scriptText);
   if (!functionSymbol) return;
 
   result.push(functionSymbol);
@@ -290,20 +290,28 @@ function provideDocumentSymbols(doc) {
   let inComment = false;
   let inContinuation = false;
   let variableKind;
+  const scriptText = doc.getText();
 
   const lineCount = Math.min(doc.lineCount, 10000);
   for (let lineNum = 0; lineNum < lineCount; lineNum += 1) {
     const line = doc.lineAt(lineNum);
-    const { text } = line;
-    const regionName = text.match(regionPattern);
+    const lineText = line.text;
+    const regionName = lineText.match(regionPattern);
 
     if (!isSkippableLine(line) || regionName) {
       if (!inComment) {
-        parseFunctionFromText({ text, processedSymbols, doc, lineNum, result });
+        parseFunctionFromText({
+          text: lineText,
+          processedSymbols,
+          doc,
+          lineNum,
+          result,
+          scriptText,
+        });
 
         ({ inContinuation, variableKind } = parseVariablesFromText({
           inContinuation,
-          text,
+          text: lineText,
           found: processedSymbols,
           doc,
           result,
@@ -315,11 +323,11 @@ function provideDocumentSymbols(doc) {
       }
     }
 
-    if (commentEndRegex.test(text)) {
+    if (commentEndRegex.test(lineText)) {
       inComment = false;
     }
 
-    if (commentStartRegex.test(text)) {
+    if (commentStartRegex.test(lineText)) {
       inComment = true;
     }
   }
