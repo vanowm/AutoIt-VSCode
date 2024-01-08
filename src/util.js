@@ -66,14 +66,11 @@ const getIncludeText = filePath => {
 const getIncludePath = (fileOrPath, document) => {
   let includePath = '';
 
-  if (fileOrPath.charAt(1) === ':') {
+  if (fileOrPath.startsWith(':', 1)) {
     includePath = fileOrPath;
   } else {
-    let docDir = path.dirname(document.fileName);
-
-    docDir +=
-      (fileOrPath.charAt(0) === '\\' || fileOrPath.charAt(0) === '/' ? '' : '\\') + fileOrPath;
-    includePath = path.normalize(docDir);
+    const docDir = path.dirname(document.fileName);
+    includePath = path.join(docDir, fileOrPath);
   }
 
   includePath = includePath.charAt(0).toUpperCase() + includePath.slice(1);
