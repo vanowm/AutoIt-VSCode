@@ -880,18 +880,17 @@ function getDebugText() {
  */
 function getIndent() {
   const editor = window.activeTextEditor;
-  const doc = editor.document;
-  const line = doc.lineAt(editor.selection.active.line);
+  const { document, selection } = editor;
+  const activeLine = document.lineAt(selection.active.line);
 
-  if (line.isEmptyOrWhitespace) {
+  if (activeLine.isEmptyOrWhitespace) {
     return '';
   }
 
-  // Grab the whole line
-  const { text } = line;
-  // Get the indent of the current line
-  const findIndent = /(\s*).+/;
-  return findIndent.exec(text)[1];
+  const lineText = activeLine.text;
+  const indent = lineText.match(/^\s*/)[0];
+
+  return indent;
 }
 
 const debugMsgBox = () => {
