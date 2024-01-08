@@ -121,14 +121,14 @@ const fillCompletions = (entries, kind, detail = '', requiredScript = '') => {
  * @returns Returns an empty object or with Hover objects
  */
 const signatureToHover = signatures => {
-  let hoverObjects = {};
-  const sigKeys = Object.keys(signatures);
-  sigKeys.forEach(item => {
-    hoverObjects = {
-      ...hoverObjects,
-      [item]: [signatures[item].documentation, `\`\`\`\r${signatures[item].label}\r\`\`\``],
-    };
-  });
+  const hoverObjects = {};
+
+  for (const item of Object.keys(signatures)) {
+    hoverObjects[item] = [
+      signatures[item].documentation,
+      `\`\`\`\r${signatures[item].label}\r\`\`\``,
+    ];
+  }
 
   return hoverObjects;
 };
