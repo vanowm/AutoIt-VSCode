@@ -18,7 +18,10 @@ const meta = require('../package.json');
   // convert default rules into an object with the scope as key
   const defaultRules = meta.contributes.configurationDefaults[
     'editor.tokenColorCustomizations'
-  ].textMateRules.reduce((obj, item) => ((obj[item.scope] = item), obj), {});
+  ].textMateRules.reduce((obj, item) => {
+    obj[item.scope] = item;
+    return obj;
+  }, {});
 
   let value = cConfig.get('tokenColorCustomizations');
   if (typeof value !== 'object' || value === null) value = {};
@@ -39,8 +42,10 @@ const meta = require('../package.json');
     }
     // add all remaining rules
     for (const scope in rules) {
-      list.push(rules[scope]);
-      save = true;
+      if (Object.prototype.hasOwnProperty.call(rules, scope)) {
+        list.push(rules[scope]);
+        save = true;
+      }
     }
 
     // store data in a new object, because original might be a Proxy
