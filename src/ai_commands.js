@@ -880,18 +880,17 @@ function getDebugText() {
  */
 function getIndent() {
   const editor = window.activeTextEditor;
-  const doc = editor.document;
-  const line = doc.lineAt(editor.selection.active.line);
+  const { document, selection } = editor;
+  const activeLine = document.lineAt(selection.active.line);
 
-  if (line.isEmptyOrWhitespace) {
+  if (activeLine.isEmptyOrWhitespace) {
     return '';
   }
 
-  // Grab the whole line
-  const { text } = line;
-  // Get the indent of the current line
-  const findIndent = /(\s*).+/;
-  return findIndent.exec(text)[1];
+  const lineText = activeLine.text;
+  const indent = lineText.match(/^\s*/)[0];
+
+  return indent;
 }
 
 const debugMsgBox = () => {
@@ -1007,33 +1006,30 @@ const launchKoda = () => {
   procRunner(config.kodaPath);
 };
 
-const changeConsoleParams = () => {
-  const currentParameters = config.consoleParams;
+/**
+ * Prompts the user to enter space-separated parameters to send to the command line when scripts are run.
+ * Wraps single parameters with one or more spaces with quotes.
+ * Updates the configuration with the new parameters and displays a message to the user.
+ */
+const changeConsoleParams = async () => {
+  const currentParams = config.consoleParams;
 
-  window
-    .showInputBox({
-      placeHolder: `param "param with spaces" 3`,
-      value: currentParameters,
-      prompt:
-        'Enter space-separated parameters to send to the command line when scripts are run. Wrap single parameters with one or more spaces with quotes.',
-    })
-    .then(input => {
-      let newParams = input;
-      if (input === undefined) {
-        // Preserve standing console parameters if input is cancelled
-        newParams = currentParameters;
-      }
+  const input = await window.showInputBox({
+    placeHolder: 'param "param with spaces" 3',
+    value: currentParams,
+    prompt:
+      'Enter space-separated parameters to send to the command line when scripts are run. Wrap single parameters with one or more spaces with quotes.',
+  });
 
-      config.update('consoleParams', newParams, false).then(() => {
-        const params = config.consoleParams;
+  const newParams = input !== undefined ? input : currentParams;
 
-        const message = params
-          ? `Current console parameter(s): ${params}`
-          : `Console parameter(s) have been cleared.`;
+  await config.update('consoleParams', newParams, false);
 
-        window.showInformationMessage(message);
-      });
-    });
+  const message = newParams
+    ? `Current console parameter(s): ${newParams}`
+    : 'Console parameter(s) have been cleared.';
+
+  window.showInformationMessage(message);
 };
 
 const killScriptOpened = () => {
