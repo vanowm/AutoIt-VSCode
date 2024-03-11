@@ -68,6 +68,12 @@ const generateFunctionSymbol = (functionName, document, text, startingLineNumber
   return functionSymbol;
 };
 
+/**
+ * Find the end index of a region in a document.
+ * @param {string} documentText - The text of the document.
+ * @param {number} startIndex - The starting index of the region.
+ * @returns {number} - The end index of the region.
+ */
 const findRegionEndIndex = (documentText, startIndex) => {
   const regionEndPattern = new RegExp(`#EndRegion\\s*$`);
 
