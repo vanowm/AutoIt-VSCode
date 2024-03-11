@@ -68,31 +68,67 @@ const generateFunctionSymbol = (functionName, document, text, startingLineNumber
   return functionSymbol;
 };
 
+const findRegionEndIndex = (documentText, startIndex) => {
+  const regionEndPattern = new RegExp(`#EndRegion\\s*$`);
+
+  let nestingLevel = 1;
+  let currentIndex = startIndex;
+  let endIndex = -1;
+  let lastEndIndex = startIndex;
+
+  while (currentIndex < documentText.length) {
+    const nextStartIndex = documentText.indexOf('#Region', currentIndex);
+    const nextEndIndex = documentText.indexOf('#EndRegion', currentIndex);
+
+    if (nextStartIndex !== -1 && (nextStartIndex < nextEndIndex || nextEndIndex === -1)) {
+      nestingLevel++;
+      currentIndex = nextStartIndex + '#Region'.length;
+    } else if (nextEndIndex !== -1) {
+      if (regionEndPattern.test(documentText.slice(nextEndIndex))) {
+        if (nestingLevel === 1) {
+          endIndex = nextEndIndex;
+          break;
+        }
+        nestingLevel--;
+      }
+      lastEndIndex = nextEndIndex;
+      currentIndex = nextEndIndex + '#EndRegion'.length;
+    } else {
+      break;
+    }
+  }
+
+  return endIndex === -1 ? lastEndIndex : endIndex;
+};
+
 /**
  * Generates a SymbolInformation object for a Region from a given TextDocument
  * that includes the full range of the region's body
  * @param {String} regionName The name of the region from the AutoIt script
- * @param {TextDocument} doc The current document to search
- * @param {String} docText The text from the document (usually generated through `TextDocument.getText()`)
+ * @param {TextDocument} document The current document to search
+ * @param {String} documentText The text from the document (usually generated through `TextDocument.getText()`)
  * @returns SymbolInformation
  */
-const createRegionSymbol = (regionName, doc, docText) => {
-  const cleanRegionName = regionName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-  const pattern = new RegExp(`#Region\\s[- ]{0,}(${cleanRegionName}).*?#EndRegion`, 's');
+const createRegionSymbol = (regionName, document, documentText) => {
+  const startMatch = new RegExp(
+    `#Region\\s[- ]{0,}(${regionName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})`,
+    's',
+  ).exec(documentText);
+  if (!startMatch) return null;
 
-  const result = pattern.exec(docText);
-  if (result === null) {
-    return null;
-  }
-  const endPoint = result.index + result[0].length;
-  const newRegionSymbol = new SymbolInformation(
-    result[1],
+  const startIndex = startMatch.index + startMatch[0].length;
+  const endIndex = findRegionEndIndex(documentText, startIndex);
+
+  const startPosition = document.positionAt(startMatch.index);
+  const endPosition = document.positionAt(endIndex + '#EndRegion'.length);
+  const regionSymbol = new SymbolInformation(
+    startMatch[1],
     SymbolKind.Namespace,
     '',
-    new Location(doc.uri, new Range(doc.positionAt(result.index), doc.positionAt(endPoint))),
+    new Location(document.uri, new Range(startPosition, endPosition)),
   );
 
-  return newRegionSymbol;
+  return regionSymbol;
 };
 
 /**
