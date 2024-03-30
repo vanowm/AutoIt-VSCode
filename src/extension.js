@@ -24,9 +24,31 @@ const { config } = conf;
 const runCheckProcess = fileName => {
   return new Promise((resolve, reject) => {
     let consoleOutput = '';
-    const checkProcess = execFile(config.checkPath, [fileName], {
-      cwd: dirname(fileName),
-    });
+    const checkProcess = execFile(
+      config.checkPath,
+      [
+        /* https://www.autoitscript.com/autoit3/docs/intro/au3check.htm */
+        '-q', // quiet (only error/warn output)
+        '-w',
+        1, // already included file (on)
+        '-w',
+        2, // missing #comments-end (on)
+        '-w',
+        3, // already declared var (off)
+        '-w',
+        4, // local var used in global scope (off)
+        '-w',
+        5, // local var declared but not used (off)
+        '-w',
+        6, // warn when using Dim (off)
+        '-w',
+        7, // warn when passing Const or expression on ByRef param(s) (on)
+        fileName,
+      ],
+      {
+        cwd: dirname(fileName),
+      },
+    );
 
     checkProcess.stdout.on('data', data => {
       if (data.length === 0) {
