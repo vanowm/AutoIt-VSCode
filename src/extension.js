@@ -24,18 +24,40 @@ const { config } = conf;
 const runCheckProcess = fileName => {
   return new Promise((resolve, reject) => {
     let consoleOutput = '';
-    const checkProcess = execFile(config.checkPath, [fileName], {
-      cwd: dirname(fileName),
-    });
+    const checkProcess = execFile(
+      config.checkPath,
+      [
+        '-w',
+        1, // already included file
+        '-w',
+        2, // missing #comments-end
+        '-w',
+        3, // already declared var
+        '-w',
+        4, // local var used in global scope
+        '-w',
+        5, // local var declared but not used
+        '-w',
+        6, // warn when using Dim
+        '-w',
+        7, // warn when passing Const or expression on ByRef param(s)
+        fileName,
+      ],
+      {
+        cwd: dirname(fileName),
+      },
+    );
 
     checkProcess.stdout.on('data', data => {
       if (data.length === 0) {
         return;
       }
+      console.log(data.toString());
       consoleOutput += data.toString();
     });
 
     checkProcess.stderr.on('error', error => {
+      console.error(error);
       reject(error);
     });
 
