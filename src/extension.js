@@ -41,21 +41,19 @@ const runCheckProcess = document => {
       '-w',
       7, // warn when passing Const or expression on ByRef param(s) (on)
     ];
-    const text = document.getText();
-    const index = text.lastIndexOf('#AutoIt3Wrapper_AU3Check_Parameters');
-    if (index !== -1) {
-      const regexp = /(-w-?)\s+([0-9]+)/g;
-      // get just the parameters
-      const str = text.slice(index + 35, text.indexOf('\n', index) + 1 || text.length);
-      while (str) {
-        const [, param, value] = regexp.exec(str) || [];
-        if (!param) break;
-        const i = (value - 1) * 2;
-        // only update existing params
-        if (params[i] === undefined) continue;
-        params[i] = param;
-        params[i + 1] = value;
-      }
+    // find last occurrence of #AutoIt3Wrapper_AU3Check_Parameters=
+    const match = [
+      ...document.getText().matchAll(/^\s*#AutoIt3Wrapper_AU3Check_Parameters=.*$/gm),
+    ].pop();
+    const regexp = /(-w-?)\s+([0-9]+)/g;
+    while (match) {
+      const [, param, value] = regexp.exec(match[0]) || [];
+      if (!param) break;
+      const i = (value - 1) * 2;
+      // only update existing params
+      if (params[i] === undefined) continue;
+      params[i] = param;
+      params[i + 1] = ~~value;
     }
     const checkProcess = execFile(config.checkPath, [...params, document.fileName], {
       cwd: dirname(document.fileName),
