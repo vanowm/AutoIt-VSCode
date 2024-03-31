@@ -17,15 +17,48 @@ import conf from './ai_config';
 const { config } = conf;
 
 /**
- * Runs the check process for the given file and returns the console output.
- * @param {string} fileName - The name of the file to check.
+ * Runs the check process for the given document and returns the console output.
+ * @param {TextDocument} document - The document to run the AU3Check process on.
  * @returns {Promise<string>} A promise that resolves with the console output of the check process.
  */
-const runCheckProcess = fileName => {
+const runCheckProcess = document => {
   return new Promise((resolve, reject) => {
     let consoleOutput = '';
-    const checkProcess = execFile(config.checkPath, [fileName], {
-      cwd: dirname(fileName),
+    const params = [
+      /* https://www.autoitscript.com/autoit3/docs/intro/au3check.htm */
+      '-w',
+      1, // already included file (on)
+      '-w',
+      2, // missing #comments-end (on)
+      '-w',
+      3, // already declared var (off)
+      '-w',
+      4, // local var used in global scope (off)
+      '-w',
+      5, // local var declared but not used (off)
+      '-w',
+      6, // warn when using Dim (off)
+      '-w',
+      7, // warn when passing Const or expression on ByRef param(s) (on)
+    ];
+    const text = document.getText();
+    const index = text.lastIndexOf('#AutoIt3Wrapper_AU3Check_Parameters');
+    if (index !== -1) {
+      const regexp = /(-w-?)\s+([0-9]+)/g;
+      // get just the parameters
+      const str = text.slice(index + 35, text.indexOf('\n', index) + 1 || text.length);
+      while (str) {
+        const [, param, value] = regexp.exec(str) || [];
+        if (!param) break;
+        const i = (value - 1) * 2;
+        // only update existing params
+        if (params[i] === undefined) continue;
+        params[i] = param;
+        params[i + 1] = value;
+      }
+    }
+    const checkProcess = execFile(config.checkPath, [...params, document.fileName], {
+      cwd: dirname(document.fileName),
     });
 
     checkProcess.stdout.on('data', data => {
@@ -76,7 +109,7 @@ const checkAutoItCode = async (document, diagnosticCollection) => {
   if (!validateCheckPath(checkPath)) return;
 
   try {
-    const consoleOutput = await runCheckProcess(document.fileName);
+    const consoleOutput = await runCheckProcess(document);
     parseAu3CheckOutput(consoleOutput, diagnosticCollection, document.uri);
   } catch (error) {
     handleCheckProcessError(error);
