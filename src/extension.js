@@ -28,7 +28,6 @@ const runCheckProcess = fileName => {
       config.checkPath,
       [
         /* https://www.autoitscript.com/autoit3/docs/intro/au3check.htm */
-        '-q', // quiet (only error/warn output)
         '-w',
         1, // already included file (on)
         '-w',
